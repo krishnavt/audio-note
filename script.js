@@ -71,9 +71,7 @@ class AudioNote {
         this.fallbackMode = document.getElementById('fallbackMode');
         this.manualModeBtn = document.getElementById('manualModeBtn');
         
-        // AI Enhancement elements
-        this.enhanceBtn = document.getElementById('enhanceBtn');
-        this.enhancementMode = document.getElementById('enhancementMode');
+        // AI Enhancement elements (removed - now automatic)
         this.aiStatus = document.getElementById('aiStatus');
         this.timeBtn = document.getElementById('timeBtn');
         this.timePanel = document.getElementById('timePanel');
@@ -240,8 +238,7 @@ class AudioNote {
             this.enableManualMode();
         });
         
-        // AI Enhancement events
-        this.enhanceBtn.addEventListener('click', () => this.enhanceText());
+        // AI Enhancement events (removed - now automatic)
         this.timeBtn.addEventListener('click', () => this.showTimePanel());
         this.closeTimeBtn.addEventListener('click', () => this.hideTimePanel());
 
@@ -534,15 +531,15 @@ class AudioNote {
         console.log('Processing recorded audio...');
         
         try {
-            // Show processing state briefly
-            this.setProcessingState(true, 'Processing your recording...');
+            // Show processing state
+            this.setProcessingState(true, 'Converting to structured text...');
             
             // Use the transcript captured during recording
             const transcript = this.recordedTranscript.trim();
             
             if (transcript) {
-                // Display the actual transcription result
-                this.displayTranscriptionResult(transcript);
+                // Automatically enhance with AI formatting
+                await this.enhanceTranscriptAutomatically(transcript);
             } else {
                 // No transcript was captured
                 this.transcript.textContent = 'No speech detected. Please try recording again and speak clearly.';
@@ -555,9 +552,53 @@ class AudioNote {
             this.transcript.classList.remove('processing-state');
             this.showError('Failed to process recording: ' + error.message);
         } finally {
-            setTimeout(() => {
-                this.setProcessingState(false);
-            }, 500); // Brief delay to show processing state
+            this.setProcessingState(false);
+        }
+    }
+    
+    async enhanceTranscriptAutomatically(transcript) {
+        try {
+            console.log('Enhancing transcript with AI...');
+            
+            const response = await fetch('/api/enhance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: transcript,
+                    mode: 'auto-format', // New mode for automatic formatting
+                    sessionToken: this.sessionToken
+                })
+            });
+
+            if (!response.ok) {
+                // If AI enhancement fails, show original transcript
+                console.log('AI enhancement failed, showing original transcript');
+                this.displayTranscriptionResult(transcript);
+                return;
+            }
+
+            const data = await response.json();
+            
+            if (data.enhancedText) {
+                // Display the AI-enhanced result
+                this.displayTranscriptionResult(data.enhancedText);
+                
+                // Update remaining time if user is authenticated
+                if (data.remainingMinutes !== undefined) {
+                    this.userMinutes = data.remainingMinutes;
+                    this.updateTimeDisplay();
+                }
+                
+                this.showMessage('✨ Voice note converted to structured text!');
+            } else {
+                // Fallback to original transcript
+                this.displayTranscriptionResult(transcript);
+            }
+            
+        } catch (error) {
+            console.error('AI Enhancement error:', error);
+            // Fallback to original transcript if AI fails
+            this.displayTranscriptionResult(transcript);
         }
     }
     
@@ -827,23 +868,9 @@ class AudioNote {
         this.sendVerificationCode();
     }
 
-    // AI Enhancement Functions
+    // AI Enhancement is now automatic - no button needed
     updateAIButtonState() {
-        const hasText = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
-        const hasTime = this.userMinutes > 0;
-        const isAuthenticated = !!this.user;
-        
-        this.enhanceBtn.disabled = !hasText || !hasTime || !isAuthenticated;
-        
-        if (!isAuthenticated) {
-            this.enhanceBtn.textContent = '🔐 Sign In First';
-        } else if (!hasTime) {
-            this.enhanceBtn.textContent = '⏱️ Buy Time First';
-        } else if (!hasText) {
-            this.enhanceBtn.textContent = '✨ Enhance with AI';
-        } else {
-            this.enhanceBtn.textContent = '✨ Enhance with AI';
-        }
+        // Method kept for compatibility but no longer needed
     }
 
     showTimePanel() {
@@ -898,82 +925,7 @@ class AudioNote {
         }
     }
 
-    async enhanceText() {
-        if (!this.user) {
-            this.showError('Please sign in to use AI enhancement.');
-            this.showSignup();
-            return;
-        }
-
-        const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
-        
-        if (!text) {
-            this.showError('No text to enhance. Please record or type some text first.');
-            return;
-        }
-
-        if (this.userMinutes < 1) {
-            this.showError('Insufficient time remaining. Please purchase more time.');
-            this.showTimePanel();
-            return;
-        }
-
-        const mode = this.enhancementMode.value;
-        
-        this.setAIStatus('processing', 'Enhancing text...');
-        this.enhanceBtn.disabled = true;
-        this.enhanceBtn.textContent = '⏳ Processing...';
-
-        try {
-            const response = await fetch('/api/enhance', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: text,
-                    mode: mode,
-                    sessionToken: this.sessionToken
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (data.enhancedText) {
-                this.transcript.textContent = data.enhancedText;
-                this.transcript.classList.add('has-content');
-                this.updateStats();
-                
-                // Update remaining time
-                this.userMinutes = data.remainingMinutes;
-                this.updateTimeDisplay();
-                
-                this.setAIStatus('success', `Text enhanced successfully! ${data.remainingMinutes.toFixed(1)} minutes remaining.`);
-                
-                // Clear success status after 3 seconds
-                setTimeout(() => {
-                    this.setAIStatus('', '');
-                }, 3000);
-            }
-        } catch (error) {
-            console.error('AI Enhancement error:', error);
-            if (error.message.includes('Insufficient time')) {
-                this.setAIStatus('error', 'No time remaining. Please purchase more time.');
-                this.showTimePanel();
-            } else if (error.message.includes('Authentication required')) {
-                this.setAIStatus('error', 'Please sign in again.');
-                this.logout();
-            } else {
-                this.setAIStatus('error', 'Enhancement failed: ' + error.message);
-            }
-        } finally {
-            this.enhanceBtn.disabled = false;
-            this.updateAIButtonState();
-        }
-    }
+    // enhanceText method removed - now handled automatically in enhanceTranscriptAutomatically
 
     setAIStatus(type, message) {
         this.aiStatus.className = `ai-status ${type}`;

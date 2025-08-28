@@ -21,45 +21,44 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Text is required' });
         }
 
-        if (!sessionToken) {
-            return res.status(401).json({ error: 'Authentication required' });
-        }
-
-        // Verify session and get user
-        const user = await getUserBySession(sessionToken);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid or expired session' });
-        }
-
-        // Check user's remaining time (each enhancement costs 1 minute)
-        if (user.remainingMinutes < 1) {
-            return res.status(402).json({ 
-                error: 'Insufficient time. Please purchase more conversion time.',
-                remainingMinutes: 0
-            });
-        }
-
-        // Call OpenAI API
-        const enhancedText = await callOpenAI(text, mode);
+        // For auto-format mode, allow without authentication but with limited features
+        let user = null;
+        let useOpenAI = false;
         
-        if (enhancedText) {
-            // Deduct 1 minute of conversion time
-            await deductTime(user.email, 1, mode);
-            const remainingMinutes = await getUserRemainingMinutes(user.email);
-            
-            return res.status(200).json({
-                enhancedText,
-                remainingMinutes,
-                usage: {
-                    originalLength: text.length,
-                    enhancedLength: enhancedText.length,
-                    mode: mode,
-                    timeUsed: 1
-                }
-            });
-        } else {
-            return res.status(500).json({ error: 'Failed to enhance text' });
+        if (sessionToken) {
+            user = await getUserBySession(sessionToken);
+            if (user && user.remainingMinutes >= 1) {
+                useOpenAI = true; // Use full AI enhancement for authenticated users
+            }
         }
+
+        // Enhance text based on user status
+        let enhancedText;
+        
+        if (useOpenAI) {
+            // Full AI enhancement for authenticated users
+            enhancedText = await callOpenAI(text, mode);
+            if (enhancedText) {
+                // Deduct 1 minute of conversion time
+                await deductTime(user.email, 1, mode);
+                const remainingMinutes = await getUserRemainingMinutes(user.email);
+                
+                return res.status(200).json({
+                    enhancedText: enhancedText,
+                    remainingMinutes: remainingMinutes,
+                    enhanced: true
+                });
+            }
+        }
+        
+        // Basic formatting for non-authenticated users or when AI fails
+        enhancedText = await basicTextFormatting(text);
+        
+        return res.status(200).json({
+            enhancedText: enhancedText,
+            enhanced: false,
+            message: 'Basic formatting applied. Sign up for AI-powered enhancement!'
+        });
 
     } catch (error) {
         console.error('Enhancement error:', error);
@@ -75,6 +74,7 @@ async function callOpenAI(text, mode) {
         rewrite: `Rewrite and restructure the following text to make it clear, professional, and well-organized. Improve flow and readability while preserving all key information:\n\n${text}`,
         summarize: `Summarize the following text into key points, keeping the most important information concise and clear:\n\n${text}`,
         formal: `Rewrite the following text in a formal, professional tone suitable for business or academic contexts:\n\n${text}`,
+        'auto-format': `Transform this voice note transcript into structured, perfectly edited text. Fix grammar, improve flow, add proper punctuation, and organize into clear paragraphs. Make it professional and readable:\n\n${text}`,
         bullets: `Convert the following text into a well-organized bullet point format, grouping related ideas together:\n\n${text}`
     };
 
@@ -141,4 +141,31 @@ async function deductTime(email, minutes, mode) {
 
     users.set(email, user);
     return minutes;
+}
+
+async function basicTextFormatting(text) {
+    // Basic text formatting for non-authenticated users
+    let formatted = text;
+    
+    // Add proper capitalization
+    formatted = formatted.toLowerCase();
+    formatted = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    
+    // Fix common issues
+    formatted = formatted.replace(/\bi\b/g, 'I'); // Capitalize "I"
+    formatted = formatted.replace(/\s+/g, ' '); // Remove extra spaces
+    formatted = formatted.replace(/(\w)\s*\.\s*(\w)/g, '$1. $2'); // Fix periods
+    formatted = formatted.replace(/(\w)\s*,\s*(\w)/g, '$1, $2'); // Fix commas
+    
+    // Capitalize after periods
+    formatted = formatted.replace(/\.\s*(\w)/g, function(match, p1) {
+        return '. ' + p1.toUpperCase();
+    });
+    
+    // Ensure proper ending
+    if (!/[.!?]$/.test(formatted.trim())) {
+        formatted = formatted.trim() + '.';
+    }
+    
+    return formatted.trim();
 }
