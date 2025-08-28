@@ -55,7 +55,6 @@ class AudioNote {
 
     initializeElements() {
         this.recordBtn = document.getElementById('recordBtn');
-        this.recordText = this.recordBtn.querySelector('.record-text');
         this.recordingTime = document.getElementById('recordingTime');
         this.recordingStatus = document.querySelector('.recording-status');
         this.audioLevel = document.querySelector('.level-bar');
@@ -357,7 +356,7 @@ class AudioNote {
 
             this.isRecording = true;
             this.recordBtn.classList.add('recording');
-            this.recordText.textContent = 'Stop Recording';
+            // No text to update - button is icon only
             this.recordingStatus.classList.add('active');
 
             this.startTimer();
@@ -469,7 +468,6 @@ class AudioNote {
         }
 
         this.recordBtn.classList.remove('recording');
-        this.recordText.textContent = 'Click to record';
         this.recordingStatus.classList.remove('active');
         
         this.stopTimer();
