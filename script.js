@@ -140,6 +140,9 @@ class AudioNote {
                     if (event.results[i].isFinal) {
                         console.log('Final transcript:', transcript);
                         this.recordedTranscript += transcript + ' ';
+                        console.log('Total recorded transcript:', this.recordedTranscript);
+                    } else {
+                        console.log('Interim transcript:', transcript);
                     }
                 }
             };
@@ -595,12 +598,14 @@ class AudioNote {
             
             // Use the transcript captured during recording
             const transcript = this.recordedTranscript.trim();
+            console.log('Processing transcript:', transcript);
             
             if (transcript) {
                 // Automatically enhance with AI formatting
                 await this.enhanceTranscriptAutomatically(transcript);
             } else {
                 // No transcript was captured
+                console.log('No transcript captured during recording');
                 this.transcript.textContent = 'No speech detected. Please try recording again and speak clearly.';
                 this.transcript.classList.remove('processing-state');
             }
