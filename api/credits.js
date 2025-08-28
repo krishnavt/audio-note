@@ -1,4 +1,4 @@
-// Vercel serverless function for credit management
+// Vercel serverless function for time management
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,20 +11,23 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-        // Get user credits
-        const { userId } = req.query;
+        // Get user time remaining
+        const { sessionToken } = req.query;
         
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID is required' });
+        if (!sessionToken) {
+            return res.status(401).json({ error: 'Session token is required' });
         }
 
         try {
-            const credits = await getUserCredits(userId);
-            const usage = await getUserUsage(userId);
+            const user = await getUserBySession(sessionToken);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired session' });
+            }
             
             return res.status(200).json({
-                credits,
-                usage
+                remainingMinutes: user.remainingMinutes,
+                totalMinutesUsed: user.totalMinutesUsed || 0,
+                usage: user.usage || []
             });
         } catch (error) {
             return res.status(500).json({ error: error.message });
@@ -32,22 +35,27 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-        // Add credits (after payment)
-        const { userId, amount, paymentId } = req.body;
+        // Add time (after payment)
+        const { sessionToken, minutes, paymentId } = req.body;
         
-        if (!userId || !amount || !paymentId) {
+        if (!sessionToken || !minutes || !paymentId) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
         try {
+            const user = await getUserBySession(sessionToken);
+            if (!user) {
+                return res.status(401).json({ error: 'Invalid or expired session' });
+            }
+
             // In production, verify payment with Stripe here
-            await addCredits(userId, amount, paymentId);
-            const newBalance = await getUserCredits(userId);
+            await addMinutes(user.email, minutes, paymentId);
+            const newBalance = await getUserRemainingMinutes(user.email);
             
             return res.status(200).json({
                 success: true,
-                credits: newBalance,
-                added: amount
+                remainingMinutes: newBalance,
+                added: minutes
             });
         } catch (error) {
             return res.status(500).json({ error: error.message });
@@ -57,31 +65,37 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
 }
 
-async function getUserCredits(userId) {
-    // Simple in-memory storage for demo - in production use a database
-    const users = JSON.parse(process.env.USER_DATA || '{}');
-    return users[userId]?.credits || 5; // Give new users 5 free credits
-}
+// In-memory storage for demo - in production use a proper database
+const users = new Map();
 
-async function getUserUsage(userId) {
-    const users = JSON.parse(process.env.USER_DATA || '{}');
-    return users[userId]?.usage || [];
-}
-
-async function addCredits(userId, amount, paymentId) {
-    const users = JSON.parse(process.env.USER_DATA || '{}');
-    
-    if (!users[userId]) {
-        users[userId] = { credits: 5, usage: [], payments: [] };
+async function getUserBySession(sessionToken) {
+    // Find user by session token
+    for (const [email, user] of users.entries()) {
+        if (user.sessionToken === sessionToken && user.sessionExpiresAt > new Date()) {
+            return user;
+        }
     }
+    return null;
+}
+
+async function getUserRemainingMinutes(email) {
+    const user = users.get(email);
+    return user?.remainingMinutes || 0;
+}
+
+async function addMinutes(email, minutes, paymentId) {
+    const user = users.get(email);
+    if (!user) return;
     
-    users[userId].credits += amount;
-    users[userId].payments.push({
+    user.remainingMinutes += minutes;
+    
+    if (!user.payments) user.payments = [];
+    user.payments.push({
         timestamp: new Date().toISOString(),
-        amount,
-        paymentId
+        minutes,
+        paymentId,
+        type: 'purchase'
     });
 
-    // In production, save to database
-    process.env.USER_DATA = JSON.stringify(users);
+    users.set(email, user);
 }

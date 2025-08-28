@@ -10,8 +10,23 @@
 <body>
     <div class="container">
         <header>
-            <h1 class="logo">AudioNote</h1>
-            <p class="tagline">Convert voice notes into readable text</p>
+            <div class="header-content">
+                <div class="brand">
+                    <h1 class="logo">AudioNote</h1>
+                    <p class="tagline">Convert voice notes into readable text</p>
+                </div>
+                <div class="auth-section" id="authSection">
+                    <div class="user-info hidden" id="userInfo">
+                        <span id="userEmail" class="user-email"></span>
+                        <span id="userTime" class="user-time">1:00 min</span>
+                        <button id="logoutBtn" class="logout-btn">Logout</button>
+                    </div>
+                    <div class="auth-buttons" id="authButtons">
+                        <button id="loginBtn" class="auth-btn">Login</button>
+                        <button id="signupBtn" class="auth-btn primary">Sign Up</button>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <main class="app">
@@ -53,7 +68,7 @@
                             <button id="enhanceBtn" class="action-btn enhance-btn">✨ Enhance with AI</button>
                         </div>
                         <div class="basic-actions">
-                            <button id="creditsBtn" class="action-btn">💳 <span id="creditsDisplay">5</span></button>
+                            <button id="timeBtn" class="action-btn">⏱️ <span id="timeDisplay">1:00</span></button>
                             <button id="clearBtn" class="action-btn">Clear</button>
                             <button id="copyBtn" class="action-btn">Copy</button>
                             <button id="shareBtn" class="action-btn">Share</button>
@@ -69,41 +84,80 @@
                     <div id="aiStatus" class="ai-status hidden"></div>
                 </div>
 
-                <!-- Credits Panel -->
-                <div id="creditsPanel" class="credits-panel hidden">
-                    <div class="credits-header">
-                        <h4>AI Enhancement Credits</h4>
-                        <button id="closeCreditsBtn" class="close-btn">×</button>
-                    </div>
-                    <div class="credits-body">
-                        <div class="credits-info">
-                            <div class="credits-balance">
-                                <span class="credits-count" id="creditsCount">-</span>
-                                <span class="credits-label">Credits Remaining</span>
+                <!-- Authentication Modals -->
+                <div id="authModal" class="auth-modal hidden">
+                    <div class="auth-modal-content">
+                        <div class="auth-modal-header">
+                            <h3 id="authModalTitle">Sign Up</h3>
+                            <button id="closeAuthModal" class="close-btn">×</button>
+                        </div>
+                        <div class="auth-modal-body">
+                            <!-- Email Step -->
+                            <div id="emailStep" class="auth-step">
+                                <div class="input-group">
+                                    <label for="emailInput">Email Address</label>
+                                    <input type="email" id="emailInput" placeholder="Enter your email address" required>
+                                </div>
+                                <button id="sendCodeBtn" class="auth-btn primary full-width">Send Verification Code</button>
+                                <p class="auth-switch">
+                                    <span id="authSwitchText">Already have an account?</span>
+                                    <button id="authSwitchBtn" class="link-btn">Sign In</button>
+                                </p>
                             </div>
-                            <p class="credits-note">Each AI enhancement uses 1-3 credits based on text length and complexity.</p>
+                            
+                            <!-- Verification Step -->
+                            <div id="verificationStep" class="auth-step hidden">
+                                <p class="verification-info">We've sent a 6-digit code to <span id="sentToEmail"></span></p>
+                                <div class="input-group">
+                                    <label for="codeInput">Verification Code</label>
+                                    <input type="text" id="codeInput" placeholder="000000" maxlength="6" class="code-input">
+                                </div>
+                                <button id="verifyCodeBtn" class="auth-btn primary full-width">Verify & Continue</button>
+                                <p class="resend-info">
+                                    Didn't receive code? 
+                                    <button id="resendCodeBtn" class="link-btn">Resend</button>
+                                </p>
+                                <button id="backToEmailBtn" class="auth-btn secondary full-width">Back</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Time Plans Panel -->
+                <div id="timePanel" class="time-panel hidden">
+                    <div class="time-header">
+                        <h4>Conversion Time Plans</h4>
+                        <button id="closeTimeBtn" class="close-btn">×</button>
+                    </div>
+                    <div class="time-body">
+                        <div class="time-info">
+                            <div class="time-balance">
+                                <span class="time-count" id="timeCount">1:00</span>
+                                <span class="time-label">Minutes Remaining</span>
+                            </div>
+                            <p class="time-note">Convert your voice recordings to text and enhance them with AI.</p>
                         </div>
                         
                         <div class="pricing-plans">
-                            <h5>Purchase Credits</h5>
+                            <h5>Purchase More Time</h5>
                             <div class="plan-options">
                                 <div class="plan">
-                                    <div class="plan-credits">10 Credits</div>
-                                    <div class="plan-price">$2.99</div>
-                                    <button class="buy-btn" data-credits="10" data-price="2.99">Buy Now</button>
+                                    <div class="plan-credits">30 Minutes</div>
+                                    <div class="plan-price">$9.99</div>
+                                    <button class="buy-btn" data-minutes="30" data-price="9.99">Buy Now</button>
                                 </div>
                                 <div class="plan popular">
                                     <div class="plan-badge">Popular</div>
-                                    <div class="plan-credits">50 Credits</div>
-                                    <div class="plan-price">$9.99</div>
-                                    <div class="plan-savings">Save 33%</div>
-                                    <button class="buy-btn" data-credits="50" data-price="9.99">Buy Now</button>
+                                    <div class="plan-credits">120 Minutes</div>
+                                    <div class="plan-price">$29.99</div>
+                                    <div class="plan-savings">Save 25%</div>
+                                    <button class="buy-btn" data-minutes="120" data-price="29.99">Buy Now</button>
                                 </div>
                                 <div class="plan">
-                                    <div class="plan-credits">100 Credits</div>
-                                    <div class="plan-price">$14.99</div>
-                                    <div class="plan-savings">Save 50%</div>
-                                    <button class="buy-btn" data-credits="100" data-price="14.99">Buy Now</button>
+                                    <div class="plan-credits">300 Minutes</div>
+                                    <div class="plan-price">$59.99</div>
+                                    <div class="plan-savings">Save 40%</div>
+                                    <button class="buy-btn" data-minutes="300" data-price="59.99">Buy Now</button>
                                 </div>
                             </div>
                         </div>

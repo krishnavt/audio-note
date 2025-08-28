@@ -15,8 +15,9 @@ class AudioNote {
         this.lastInterimTranscript = '';
         
         // User management
-        this.userId = this.generateUserId();
-        this.userCredits = 5; // Default starting credits
+        this.user = null;
+        this.sessionToken = localStorage.getItem('audioNote_sessionToken');
+        this.userMinutes = 0;
 
         console.log('Initializing AudioNote...');
         this.checkBrowserSupport();
@@ -73,11 +74,35 @@ class AudioNote {
         this.enhanceBtn = document.getElementById('enhanceBtn');
         this.enhancementMode = document.getElementById('enhancementMode');
         this.aiStatus = document.getElementById('aiStatus');
-        this.creditsBtn = document.getElementById('creditsBtn');
-        this.creditsPanel = document.getElementById('creditsPanel');
-        this.closeCreditsBtn = document.getElementById('closeCreditsBtn');
-        this.creditsDisplay = document.getElementById('creditsDisplay');
-        this.creditsCount = document.getElementById('creditsCount');
+        this.timeBtn = document.getElementById('timeBtn');
+        this.timePanel = document.getElementById('timePanel');
+        this.closeTimeBtn = document.getElementById('closeTimeBtn');
+        this.timeDisplay = document.getElementById('timeDisplay');
+        this.timeCount = document.getElementById('timeCount');
+
+        // Authentication elements
+        this.authButtons = document.getElementById('authButtons');
+        this.userInfo = document.getElementById('userInfo');
+        this.loginBtn = document.getElementById('loginBtn');
+        this.signupBtn = document.getElementById('signupBtn');
+        this.logoutBtn = document.getElementById('logoutBtn');
+        this.userEmail = document.getElementById('userEmail');
+        this.userTime = document.getElementById('userTime');
+        
+        this.authModal = document.getElementById('authModal');
+        this.closeAuthModal = document.getElementById('closeAuthModal');
+        this.authModalTitle = document.getElementById('authModalTitle');
+        this.emailStep = document.getElementById('emailStep');
+        this.verificationStep = document.getElementById('verificationStep');
+        this.emailInput = document.getElementById('emailInput');
+        this.codeInput = document.getElementById('codeInput');
+        this.sendCodeBtn = document.getElementById('sendCodeBtn');
+        this.verifyCodeBtn = document.getElementById('verifyCodeBtn');
+        this.resendCodeBtn = document.getElementById('resendCodeBtn');
+        this.backToEmailBtn = document.getElementById('backToEmailBtn');
+        this.authSwitchBtn = document.getElementById('authSwitchBtn');
+        this.authSwitchText = document.getElementById('authSwitchText');
+        this.sentToEmail = document.getElementById('sentToEmail');
     }
 
     initializeSpeechRecognition() {
@@ -142,39 +167,63 @@ class AudioNote {
     }
 
     initializeAI() {
-        // Load user credits and initialize display
-        this.loadUserCredits();
+        // Check if user is authenticated
+        this.checkAuthentication();
         this.updateAIButtonState();
     }
 
-    generateUserId() {
-        let userId = localStorage.getItem('audioNote_userId');
-        if (!userId) {
-            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('audioNote_userId', userId);
-        }
-        return userId;
-    }
+    async checkAuthentication() {
+        if (this.sessionToken) {
+            try {
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check-session',
+                        sessionToken: this.sessionToken
+                    })
+                });
 
-    async loadUserCredits() {
-        try {
-            const response = await fetch(`/api/credits?userId=${this.userId}`);
-            if (response.ok) {
-                const data = await response.json();
-                this.userCredits = data.credits;
-                this.updateCreditsDisplay();
+                if (response.ok) {
+                    const data = await response.json();
+                    this.user = data.user;
+                    this.userMinutes = data.user.remainingMinutes;
+                    this.updateUserDisplay();
+                    return;
+                }
+            } catch (error) {
+                console.error('Session check failed:', error);
             }
-        } catch (error) {
-            console.error('Error loading credits:', error);
-            // Fallback to local storage for demo
-            this.userCredits = parseInt(localStorage.getItem('audioNote_credits') || '5');
-            this.updateCreditsDisplay();
+        }
+        
+        // Not authenticated - show auth buttons
+        this.showAuthButtons();
+    }
+
+    updateUserDisplay() {
+        if (this.user) {
+            this.authButtons.classList.add('hidden');
+            this.userInfo.classList.remove('hidden');
+            this.userEmail.textContent = this.user.email;
+            this.updateTimeDisplay();
+        } else {
+            this.showAuthButtons();
         }
     }
 
-    updateCreditsDisplay() {
-        this.creditsDisplay.textContent = this.userCredits;
-        this.creditsCount.textContent = this.userCredits;
+    showAuthButtons() {
+        this.authButtons.classList.remove('hidden');
+        this.userInfo.classList.add('hidden');
+    }
+
+    updateTimeDisplay() {
+        const minutes = Math.floor(this.userMinutes);
+        const seconds = Math.round((this.userMinutes - minutes) * 60);
+        const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        this.timeDisplay.textContent = timeStr;
+        this.timeCount.textContent = `${this.userMinutes.toFixed(1)}`;
+        this.userTime.textContent = `${timeStr} min`;
     }
 
     bindEvents() {
@@ -197,8 +246,19 @@ class AudioNote {
         
         // AI Enhancement events
         this.enhanceBtn.addEventListener('click', () => this.enhanceText());
-        this.creditsBtn.addEventListener('click', () => this.showCredits());
-        this.closeCreditsBtn.addEventListener('click', () => this.hideCredits());
+        this.timeBtn.addEventListener('click', () => this.showTimePanel());
+        this.closeTimeBtn.addEventListener('click', () => this.hideTimePanel());
+
+        // Authentication events
+        this.loginBtn.addEventListener('click', () => this.showLogin());
+        this.signupBtn.addEventListener('click', () => this.showSignup());
+        this.logoutBtn.addEventListener('click', () => this.logout());
+        this.closeAuthModal.addEventListener('click', () => this.hideAuthModal());
+        this.sendCodeBtn.addEventListener('click', () => this.sendVerificationCode());
+        this.verifyCodeBtn.addEventListener('click', () => this.verifyCode());
+        this.resendCodeBtn.addEventListener('click', () => this.resendCode());
+        this.backToEmailBtn.addEventListener('click', () => this.backToEmailStep());
+        this.authSwitchBtn.addEventListener('click', () => this.toggleAuthMode());
         
         this.clearBtn.addEventListener('click', () => this.clearTranscript());
         this.copyBtn.addEventListener('click', () => this.copyTranscript());
@@ -213,19 +273,25 @@ class AudioNote {
             this.updateStats();
         });
         
-        // Close credits panel when clicking outside
-        this.creditsPanel.addEventListener('click', (e) => {
-            if (e.target === this.creditsPanel) {
-                this.hideCredits();
+        // Close panels when clicking outside
+        this.timePanel.addEventListener('click', (e) => {
+            if (e.target === this.timePanel) {
+                this.hideTimePanel();
+            }
+        });
+
+        this.authModal.addEventListener('click', (e) => {
+            if (e.target === this.authModal) {
+                this.hideAuthModal();
             }
         });
 
         // Add buy button event listeners
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('buy-btn')) {
-                const credits = parseInt(e.target.dataset.credits);
+                const minutes = parseInt(e.target.dataset.minutes);
                 const price = parseFloat(e.target.dataset.price);
-                this.purchaseCredits(credits, price);
+                this.purchaseTime(minutes, price);
             }
         });
     }
@@ -541,15 +607,168 @@ class AudioNote {
         this.spinner.classList.add('hidden');
     }
 
+    // Authentication Methods
+    showLogin() {
+        this.authModalTitle.textContent = 'Sign In';
+        this.authSwitchText.textContent = "Don't have an account?";
+        this.authSwitchBtn.textContent = 'Sign Up';
+        this.showAuthModal();
+    }
+
+    showSignup() {
+        this.authModalTitle.textContent = 'Sign Up';
+        this.authSwitchText.textContent = 'Already have an account?';
+        this.authSwitchBtn.textContent = 'Sign In';
+        this.showAuthModal();
+    }
+
+    showAuthModal() {
+        this.authModal.classList.remove('hidden');
+        this.emailStep.classList.remove('hidden');
+        this.verificationStep.classList.add('hidden');
+        this.emailInput.value = '';
+        this.codeInput.value = '';
+    }
+
+    hideAuthModal() {
+        this.authModal.classList.add('hidden');
+    }
+
+    toggleAuthMode() {
+        if (this.authModalTitle.textContent === 'Sign Up') {
+            this.showLogin();
+        } else {
+            this.showSignup();
+        }
+    }
+
+    async sendVerificationCode() {
+        const email = this.emailInput.value.trim();
+        if (!email) {
+            this.showError('Please enter your email address');
+            return;
+        }
+
+        this.sendCodeBtn.disabled = true;
+        this.sendCodeBtn.textContent = 'Sending...';
+
+        try {
+            const response = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'send-code',
+                    email: email
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.sentToEmail.textContent = email;
+                this.emailStep.classList.add('hidden');
+                this.verificationStep.classList.remove('hidden');
+                this.showMessage('Verification code sent! Check your email.');
+                // For demo purposes, show the code
+                if (data.demoCode) {
+                    this.showMessage(`Demo code: ${data.demoCode}`);
+                }
+            } else {
+                this.showError(data.error || 'Failed to send verification code');
+            }
+        } catch (error) {
+            this.showError('Network error. Please try again.');
+        } finally {
+            this.sendCodeBtn.disabled = false;
+            this.sendCodeBtn.textContent = 'Send Verification Code';
+        }
+    }
+
+    async verifyCode() {
+        const email = this.sentToEmail.textContent;
+        const code = this.codeInput.value.trim();
+
+        if (!code) {
+            this.showError('Please enter the verification code');
+            return;
+        }
+
+        this.verifyCodeBtn.disabled = true;
+        this.verifyCodeBtn.textContent = 'Verifying...';
+
+        try {
+            const response = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'verify-code',
+                    email: email,
+                    code: code
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.user = data.user;
+                this.sessionToken = data.user.sessionToken;
+                this.userMinutes = data.user.remainingMinutes;
+                
+                localStorage.setItem('audioNote_sessionToken', this.sessionToken);
+                
+                this.hideAuthModal();
+                this.updateUserDisplay();
+                this.updateAIButtonState();
+                
+                if (data.user.isNewUser) {
+                    this.showMessage('Welcome! You have 1 minute of free conversion time.');
+                } else {
+                    this.showMessage('Welcome back!');
+                }
+            } else {
+                this.showError(data.error || 'Invalid verification code');
+            }
+        } catch (error) {
+            this.showError('Network error. Please try again.');
+        } finally {
+            this.verifyCodeBtn.disabled = false;
+            this.verifyCodeBtn.textContent = 'Verify & Continue';
+        }
+    }
+
+    logout() {
+        this.user = null;
+        this.sessionToken = null;
+        this.userMinutes = 0;
+        
+        localStorage.removeItem('audioNote_sessionToken');
+        
+        this.showAuthButtons();
+        this.updateAIButtonState();
+        this.showMessage('Logged out successfully');
+    }
+
+    backToEmailStep() {
+        this.emailStep.classList.remove('hidden');
+        this.verificationStep.classList.add('hidden');
+    }
+
+    resendCode() {
+        this.sendVerificationCode();
+    }
+
     // AI Enhancement Functions
     updateAIButtonState() {
         const hasText = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
-        const hasCredits = this.userCredits > 0;
+        const hasTime = this.userMinutes > 0;
+        const isAuthenticated = !!this.user;
         
-        this.enhanceBtn.disabled = !hasText || !hasCredits;
+        this.enhanceBtn.disabled = !hasText || !hasTime || !isAuthenticated;
         
-        if (!hasCredits) {
-            this.enhanceBtn.textContent = '💳 Buy Credits First';
+        if (!isAuthenticated) {
+            this.enhanceBtn.textContent = '🔐 Sign In First';
+        } else if (!hasTime) {
+            this.enhanceBtn.textContent = '⏱️ Buy Time First';
         } else if (!hasText) {
             this.enhanceBtn.textContent = '✨ Enhance with AI';
         } else {
@@ -557,57 +776,65 @@ class AudioNote {
         }
     }
 
-    showCredits() {
-        this.creditsPanel.classList.remove('hidden');
-        this.loadUserCredits(); // Refresh credits display
+    showTimePanel() {
+        this.timePanel.classList.remove('hidden');
+        this.updateTimeDisplay();
     }
 
-    hideCredits() {
-        this.creditsPanel.classList.add('hidden');
+    hideTimePanel() {
+        this.timePanel.classList.add('hidden');
     }
 
-    async purchaseCredits(credits, price) {
+    async purchaseTime(minutes, price) {
+        if (!this.user) {
+            this.showError('Please sign in first');
+            return;
+        }
+
         try {
             this.showMessage('Opening checkout...');
             
-            // Create checkout session
             const response = await fetch('/api/checkout', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: this.userId,
-                    credits: credits,
+                    sessionToken: this.sessionToken,
+                    minutes: minutes,
                     amount: price
                 })
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to create checkout session');
-            }
-
             const data = await response.json();
             
-            // For demo purposes, simulate successful payment
-            // In production, this would redirect to Stripe checkout
-            if (confirm(`Demo: Purchase ${credits} credits for $${price}?\n\nIn production, this would redirect to Stripe checkout.`)) {
-                // Simulate successful payment
-                this.userCredits += credits;
-                this.updateCreditsDisplay();
-                localStorage.setItem('audioNote_credits', this.userCredits.toString());
-                this.updateAIButtonState();
-                this.hideCredits();
-                this.showMessage(`Successfully added ${credits} credits!`);
+            if (response.ok) {
+                if (data.demo) {
+                    // Demo mode - simulate successful payment
+                    if (confirm(`Demo: Purchase ${minutes} minutes for $${price}?`)) {
+                        this.userMinutes += minutes;
+                        this.updateTimeDisplay();
+                        this.updateAIButtonState();
+                        this.hideTimePanel();
+                        this.showMessage(`Successfully added ${minutes} minutes!`);
+                    }
+                } else {
+                    // Real Stripe checkout
+                    window.location.href = data.url;
+                }
+            } else {
+                this.showError(data.error || 'Failed to create checkout session');
             }
-            
         } catch (error) {
-            console.error('Purchase error:', error);
             this.showError('Failed to process purchase: ' + error.message);
         }
     }
 
     async enhanceText() {
+        if (!this.user) {
+            this.showError('Please sign in to use AI enhancement.');
+            this.showSignup();
+            return;
+        }
+
         const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
         
         if (!text) {
@@ -615,9 +842,9 @@ class AudioNote {
             return;
         }
 
-        if (this.userCredits <= 0) {
-            this.showError('No credits remaining. Please purchase credits to continue.');
-            this.showCredits();
+        if (this.userMinutes < 1) {
+            this.showError('Insufficient time remaining. Please purchase more time.');
+            this.showTimePanel();
             return;
         }
 
@@ -630,13 +857,11 @@ class AudioNote {
         try {
             const response = await fetch('/api/enhance', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: text,
                     mode: mode,
-                    userId: this.userId
+                    sessionToken: this.sessionToken
                 })
             });
 
@@ -652,12 +877,11 @@ class AudioNote {
                 this.transcript.classList.add('has-content');
                 this.updateStats();
                 
-                // Update credits
-                this.userCredits = data.credits;
-                this.updateCreditsDisplay();
-                localStorage.setItem('audioNote_credits', this.userCredits.toString());
+                // Update remaining time
+                this.userMinutes = data.remainingMinutes;
+                this.updateTimeDisplay();
                 
-                this.setAIStatus('success', `Text enhanced successfully! ${data.credits} credits remaining.`);
+                this.setAIStatus('success', `Text enhanced successfully! ${data.remainingMinutes.toFixed(1)} minutes remaining.`);
                 
                 // Clear success status after 3 seconds
                 setTimeout(() => {
@@ -666,15 +890,18 @@ class AudioNote {
             }
         } catch (error) {
             console.error('AI Enhancement error:', error);
-            if (error.message.includes('Insufficient credits')) {
-                this.setAIStatus('error', 'No credits remaining. Please purchase more credits.');
-                this.showCredits();
+            if (error.message.includes('Insufficient time')) {
+                this.setAIStatus('error', 'No time remaining. Please purchase more time.');
+                this.showTimePanel();
+            } else if (error.message.includes('Authentication required')) {
+                this.setAIStatus('error', 'Please sign in again.');
+                this.logout();
             } else {
                 this.setAIStatus('error', 'Enhancement failed: ' + error.message);
             }
         } finally {
             this.enhanceBtn.disabled = false;
-            this.updateAIButtonState(); // This will update the button text based on credits
+            this.updateAIButtonState();
         }
     }
 

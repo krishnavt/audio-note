@@ -15,22 +15,27 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { text, mode, userId } = req.body;
+        const { text, mode, sessionToken } = req.body;
 
         if (!text || !text.trim()) {
             return res.status(400).json({ error: 'Text is required' });
         }
 
-        if (!userId) {
-            return res.status(400).json({ error: 'User ID is required' });
+        if (!sessionToken) {
+            return res.status(401).json({ error: 'Authentication required' });
         }
 
-        // Check user's remaining credits
-        const userCredits = await getUserCredits(userId);
-        if (userCredits <= 0) {
+        // Verify session and get user
+        const user = await getUserBySession(sessionToken);
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid or expired session' });
+        }
+
+        // Check user's remaining time (each enhancement costs 1 minute)
+        if (user.remainingMinutes < 1) {
             return res.status(402).json({ 
-                error: 'Insufficient credits. Please purchase more credits to continue.',
-                credits: 0
+                error: 'Insufficient time. Please purchase more conversion time.',
+                remainingMinutes: 0
             });
         }
 
@@ -38,17 +43,18 @@ export default async function handler(req, res) {
         const enhancedText = await callOpenAI(text, mode);
         
         if (enhancedText) {
-            // Deduct credit and log usage
-            await deductCredit(userId, text.length, mode);
-            const remainingCredits = await getUserCredits(userId);
+            // Deduct 1 minute of conversion time
+            await deductTime(user.email, 1, mode);
+            const remainingMinutes = await getUserRemainingMinutes(user.email);
             
             return res.status(200).json({
                 enhancedText,
-                credits: remainingCredits,
+                remainingMinutes,
                 usage: {
                     originalLength: text.length,
                     enhancedLength: enhancedText.length,
-                    mode: mode
+                    mode: mode,
+                    timeUsed: 1
                 }
             });
         } else {
@@ -100,37 +106,39 @@ async function callOpenAI(text, mode) {
     return data.choices[0]?.message?.content?.trim();
 }
 
-async function getUserCredits(userId) {
-    // Simple in-memory storage for demo - in production use a database
-    const users = JSON.parse(process.env.USER_DATA || '{}');
-    return users[userId]?.credits || 0;
+// In-memory storage for demo - in production use a proper database
+const users = new Map();
+
+async function getUserBySession(sessionToken) {
+    // Find user by session token
+    for (const [email, user] of users.entries()) {
+        if (user.sessionToken === sessionToken && user.sessionExpiresAt > new Date()) {
+            return user;
+        }
+    }
+    return null;
 }
 
-async function deductCredit(userId, textLength, mode) {
-    // Calculate cost based on text length and mode
-    let cost = 1; // Base cost
+async function getUserRemainingMinutes(email) {
+    const user = users.get(email);
+    return user?.remainingMinutes || 0;
+}
+
+async function deductTime(email, minutes, mode) {
+    const user = users.get(email);
+    if (!user) return;
     
-    if (textLength > 500) cost = 2;
-    if (textLength > 1000) cost = 3;
-    if (mode === 'rewrite' || mode === 'formal') cost += 1;
+    user.remainingMinutes = Math.max(0, user.remainingMinutes - minutes);
+    user.totalMinutesUsed = (user.totalMinutesUsed || 0) + minutes;
     
-    // Simple in-memory storage for demo - in production use a database
-    const users = JSON.parse(process.env.USER_DATA || '{}');
-    if (!users[userId]) {
-        users[userId] = { credits: 0, usage: [] };
-    }
-    
-    users[userId].credits = Math.max(0, (users[userId].credits || 0) - cost);
-    users[userId].usage.push({
+    if (!user.usage) user.usage = [];
+    user.usage.push({
         timestamp: new Date().toISOString(),
-        textLength,
         mode,
-        cost
+        timeUsed: minutes,
+        type: 'enhancement'
     });
 
-    // In production, you'd save this to a database
-    // For demo purposes, this won't persist between deployments
-    process.env.USER_DATA = JSON.stringify(users);
-    
-    return cost;
+    users.set(email, user);
+    return minutes;
 }
