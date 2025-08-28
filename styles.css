@@ -193,6 +193,22 @@ header {
 
 .recording-controls {
     margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.recording-timer {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c2c2e;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.recording-timer.active {
+    opacity: 1;
 }
 
 .record-button {
@@ -311,6 +327,7 @@ header {
 
 .recording-status {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 1rem;
@@ -532,47 +549,49 @@ header {
     border-radius: 16px;
     font-size: 1rem;
     line-height: 1.6;
-    color: #e9ecef;
-    background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+    color: #8e8e93;
+    background: #ffffff;
     transition: all 0.3s ease;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 400;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     letter-spacing: -0.01em;
     margin: 1rem -1rem;
     position: relative;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    font-style: italic;
 }
 
 .transcript-content:focus {
     outline: none;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    background: #ffffff;
 }
 
 .transcript-content.has-content {
-    background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
-    color: #f8f9fa;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: #ffffff;
+    color: #1d1d1f;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    font-style: normal;
+    border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .transcript-content.recording-state {
-    color: #ff6600;
-    background: rgba(255, 102, 0, 0.1);
-    font-weight: 600;
+    color: #FF6B35;
+    background: #ffffff;
+    font-weight: 500;
     text-align: center;
     animation: pulse 1.5s ease-in-out infinite;
-    border-color: #ff6600;
-    border-style: solid;
+    border: 2px solid #FF6B35;
+    font-style: normal;
 }
 
 .transcript-content.processing-state {
-    color: #666;
-    background: rgba(108, 117, 125, 0.1);
+    color: #8e8e93;
+    background: #ffffff;
     font-style: italic;
     text-align: center;
-    border-color: #6c757d;
-    border-style: solid;
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 @keyframes pulse {
