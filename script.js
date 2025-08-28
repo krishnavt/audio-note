@@ -105,6 +105,9 @@ class AudioNote {
         // User menu elements
         this.userIconBtn = document.getElementById('userIconBtn');
         this.userDropdown = document.getElementById('userDropdown');
+        
+        // Waveform element
+        this.waveform = document.getElementById('waveform');
     }
 
     initializeSpeechRecognition() {
@@ -377,6 +380,7 @@ class AudioNote {
             this.recordBtn.classList.add('recording');
             // No text to update - button is icon only
             this.recordingStatus.classList.add('active');
+            this.waveform.classList.remove('hidden'); // Show waveform when recording
 
             this.startTimer();
             
@@ -488,6 +492,7 @@ class AudioNote {
 
         this.recordBtn.classList.remove('recording');
         this.recordingStatus.classList.remove('active');
+        this.waveform.classList.add('hidden'); // Hide waveform when not recording
         
         this.stopTimer();
         this.audioLevel.style.width = '0%';
