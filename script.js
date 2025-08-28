@@ -82,8 +82,7 @@ class AudioNote {
         // Authentication elements
         this.authButtons = document.getElementById('authButtons');
         this.userInfo = document.getElementById('userInfo');
-        this.loginBtn = document.getElementById('loginBtn');
-        this.signupBtn = document.getElementById('signupBtn');
+        this.authBtn = document.getElementById('authBtn');
         this.logoutBtn = document.getElementById('logoutBtn');
         this.userEmail = document.getElementById('userEmail');
         this.userTime = document.getElementById('userTime');
@@ -253,8 +252,7 @@ class AudioNote {
         this.closeTimeBtn.addEventListener('click', () => this.hideTimePanel());
 
         // Authentication events
-        this.loginBtn.addEventListener('click', () => this.showLogin());
-        this.signupBtn.addEventListener('click', () => this.showSignup());
+        this.authBtn.addEventListener('click', () => this.showAuth());
         this.logoutBtn.addEventListener('click', () => this.logout());
         this.closeAuthModal.addEventListener('click', () => this.hideAuthModal());
         this.sendCodeBtn.addEventListener('click', () => this.sendVerificationCode());
@@ -738,18 +736,12 @@ class AudioNote {
     }
 
     // Authentication Methods
-    showLogin() {
-        this.authModalTitle.textContent = 'Sign In';
-        this.authSwitchText.textContent = "Don't have an account?";
-        this.authSwitchBtn.textContent = 'Sign Up';
+    showAuth() {
+        this.authModalTitle.textContent = 'Get Started';
+        this.authSwitchText.textContent = 'Enter your email to continue';
+        this.authSwitchBtn.textContent = '';
         this.showAuthModal();
-    }
-
-    showSignup() {
-        this.authModalTitle.textContent = 'Sign Up';
-        this.authSwitchText.textContent = 'Already have an account?';
-        this.authSwitchBtn.textContent = 'Sign In';
-        this.showAuthModal();
+        this.hideUserDropdown(); // Close dropdown after clicking
     }
 
     showAuthModal() {

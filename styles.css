@@ -7,8 +7,8 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     line-height: 1.6;
-    color: #1d1d1f;
-    background: #e5e5ea;
+    color: #2c2c2e;
+    background: #f5f5f7;
     min-height: 100vh;
 }
 
@@ -20,7 +20,7 @@ body {
 
 header {
     margin-bottom: 2rem;
-    color: #1d1d1f;
+    color: #2c2c2e;
 }
 
 .header-content {
@@ -104,21 +104,22 @@ header {
 }
 
 .auth-btn {
-    padding: 0.75rem 1.5rem;
-    border: 2px solid #007AFF;
-    border-radius: 8px;
-    background: #007AFF;
+    padding: 0.875rem 1.75rem;
+    border: none;
+    border-radius: 12px;
+    background: #1c1c1e;
     color: white;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+    width: 100%;
 }
 
 .auth-btn:hover {
-    background: #0056CC;
-    border-color: #0056CC;
+    background: #1c1c1e;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .auth-btn.primary {
@@ -176,11 +177,11 @@ header {
 
 .app {
     background: #ffffff;
-    border-radius: 16px;
-    padding: 2rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
     margin-bottom: 2rem;
-    border: 1px solid rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .recording-section {
@@ -195,18 +196,18 @@ header {
 }
 
 .record-button {
-    background: linear-gradient(135deg, #ff8c00, #ff6600);
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
     border: none;
-    border-radius: 22px;
-    width: 44px;
-    height: 88px;
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 140, 0, 0.4);
+    box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
     margin: 0 auto 1rem;
     position: relative;
 }
@@ -267,36 +268,36 @@ header {
 }
 
 .record-icon {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 24px;
     background: white;
     position: relative;
-    border-radius: 6px 6px 6px 0;
-    transform: rotate(-45deg);
+    border-radius: 8px 8px 0 0;
+    transform: none;
 }
 
 .record-icon::before {
     content: '';
     position: absolute;
-    top: -4px;
+    bottom: -6px;
     left: 50%;
     transform: translateX(-50%);
-    width: 10px;
-    height: 14px;
+    width: 20px;
+    height: 3px;
     background: white;
-    border-radius: 10px 10px 0 0;
+    border-radius: 2px;
 }
 
 .record-icon::after {
     content: '';
     position: absolute;
-    bottom: -5px;
+    bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 16px;
+    width: 2px;
     height: 4px;
     background: white;
-    border-radius: 2px;
+    border-radius: 1px;
 }
 
 .record-button.recording .record-icon {
@@ -483,7 +484,7 @@ header {
     font-size: 1rem;
     line-height: 1.6;
     color: #ffffff;
-    background: #2c2c2e;
+    background: #1c1c1e;
     transition: all 0.3s ease;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 400;
@@ -496,11 +497,11 @@ header {
 .transcript-content:focus {
     outline: none;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    background: #2c2c2e;
+    background: #1c1c1e;
 }
 
 .transcript-content.has-content {
-    background: #2c2c2e;
+    background: #1c1c1e;
     color: #ffffff;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
