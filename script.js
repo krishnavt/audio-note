@@ -18,7 +18,7 @@ class AudioNote {
         // User management
         this.user = null;
         this.sessionToken = localStorage.getItem('audioNote_sessionToken');
-        this.userMinutes = 0;
+        this.userMinutes = 1; // Default to 1 minute for display
 
         console.log('Initializing AudioNote...');
         this.checkBrowserSupport();
@@ -26,6 +26,7 @@ class AudioNote {
         this.initializeSpeechRecognition();
         this.initializeAI();
         this.bindEvents();
+        this.updateTimeDisplay(); // Initialize time display
     }
 
     checkBrowserSupport() {
