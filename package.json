@@ -4,7 +4,7 @@
   "description": "AI-powered speech-to-text with enhancement capabilities",
   "main": "index.html",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "python3 -m http.server 3000",
     "build": "mkdir -p public && cp -r *.html *.css *.js public/",
     "start": "vercel dev"
   },

@@ -22,7 +22,7 @@ class AudioNote {
         console.log('Initializing AudioNote...');
         this.checkBrowserSupport();
         this.initializeElements();
-        this.initializeSpeechRecognition();
+        // Speech recognition initialization removed
         this.initializeAI();
         this.bindEvents();
     }
@@ -342,9 +342,9 @@ class AudioNote {
     async startRecording() {
         console.log('Starting recording...');
         
-        // Reset transcript state
-        this.finalTranscript = '';
-        this.lastInterimTranscript = '';
+        // Clear previous transcript
+        this.transcript.textContent = 'Recording... Speak now!';
+        this.transcript.classList.add('recording-state');
         
         try {
             // Request microphone permission
@@ -363,23 +363,19 @@ class AudioNote {
 
             this.isRecording = true;
             this.recordBtn.classList.add('recording');
-            this.recordText.textContent = 'Recording...';
+            this.recordText.textContent = 'Stop Recording';
             this.recordingStatus.classList.add('active');
 
             this.startTimer();
             
-            // Start speech recognition
-            if (this.recognition) {
-                console.log('Starting speech recognition...');
-                try {
-                    this.recognition.start();
-                } catch (speechError) {
-                    console.error('Speech recognition start error:', speechError);
-                    this.showError('Speech recognition failed to start: ' + speechError.message);
-                }
-            } else {
-                console.warn('No speech recognition available');
-                this.showError('Speech recognition not available in this browser');
+            // Check if user is not signed in and limit to 30 seconds
+            if (!this.user) {
+                setTimeout(() => {
+                    if (this.isRecording) {
+                        this.showMessage('30-second free recording limit reached. Sign up for unlimited recording!');
+                        this.stopRecording();
+                    }
+                }, 30000); // 30 seconds
             }
 
             console.log('Starting media recorder...');
@@ -424,8 +420,10 @@ class AudioNote {
 
         this.mediaRecorder.onstop = () => {
             const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
-            // You could save or process the audio blob here if needed
             console.log('Audio recorded:', audioBlob);
+            
+            // Process the recorded audio
+            this.processRecording(audioBlob);
         };
     }
 
@@ -453,10 +451,6 @@ class AudioNote {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
             this.mediaRecorder.stop();
         }
-        
-        if (this.recognition) {
-            this.recognition.stop();
-        }
 
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
@@ -472,6 +466,11 @@ class AudioNote {
         
         this.stopTimer();
         this.audioLevel.style.width = '0%';
+        
+        // Show processing message
+        this.transcript.textContent = 'Processing your recording...';
+        this.transcript.classList.remove('recording-state');
+        this.transcript.classList.add('processing-state');
     }
 
     startTimer() {
@@ -518,6 +517,107 @@ class AudioNote {
         
         // Update AI button state when text changes
         this.updateAIButtonState();
+    }
+    
+    async processRecording(audioBlob) {
+        console.log('Processing recorded audio...');
+        
+        try {
+            // Convert audio blob to base64 for API transmission
+            const audioData = await this.blobToBase64(audioBlob);
+            
+            // Show processing state
+            this.setProcessingState(true, 'Transcribing your audio...');
+            
+            // Call our transcription API
+            const response = await fetch('/api/transcribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audioData: audioData,
+                    sessionToken: this.sessionToken
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.transcript) {
+                // Display structured output like email
+                this.displayStructuredOutput(data.transcript, data.structured);
+            } else {
+                throw new Error(data.error || 'Transcription failed');
+            }
+            
+        } catch (error) {
+            console.error('Processing error:', error);
+            this.transcript.textContent = 'Failed to process recording. Please try again.';
+            this.transcript.classList.remove('processing-state');
+            this.showError('Failed to process recording: ' + error.message);
+        } finally {
+            this.setProcessingState(false);
+        }
+    }
+    
+    async blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+    
+    setProcessingState(isProcessing, message = '') {
+        if (isProcessing) {
+            this.recordBtn.disabled = true;
+            this.transcript.textContent = message;
+            this.transcript.classList.add('processing-state');
+        } else {
+            this.recordBtn.disabled = false;
+            this.transcript.classList.remove('processing-state');
+        }
+    }
+    
+    displayStructuredOutput(transcript, structured) {
+        // Create email-like structure
+        const emailStructure = {
+            subject: this.extractSubject(transcript),
+            body: structured || transcript,
+            timestamp: new Date().toLocaleString(),
+            wordCount: transcript.split(' ').length
+        };
+        
+        // Update UI with structured format
+        this.transcript.innerHTML = this.formatAsEmail(emailStructure);
+        this.transcript.classList.remove('processing-state', 'recording-state');
+        this.transcript.classList.add('has-content', 'email-format');
+        
+        this.updateStats();
+    }
+    
+    extractSubject(text) {
+        // Extract first sentence or first 50 characters as subject
+        const firstSentence = text.split('.')[0];
+        return firstSentence.length > 50 ? 
+            firstSentence.substring(0, 47) + '...' : 
+            firstSentence;
+    }
+    
+    formatAsEmail(data) {
+        return `
+            <div class="email-header">
+                <div class="email-subject">
+                    <strong>Subject:</strong> ${data.subject}
+                </div>
+                <div class="email-meta">
+                    <span class="timestamp">${data.timestamp}</span>
+                    <span class="word-count">${data.wordCount} words</span>
+                </div>
+            </div>
+            <div class="email-body">
+                ${data.body.replace(/\n/g, '<br>')}
+            </div>
+        `;
     }
 
     clearTranscript() {
