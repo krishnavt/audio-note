@@ -13,11 +13,16 @@ class AudioNote {
         this.animationFrame = null;
         this.finalTranscript = '';
         this.lastInterimTranscript = '';
+        
+        // User management
+        this.userId = this.generateUserId();
+        this.userCredits = 5; // Default starting credits
 
         console.log('Initializing AudioNote...');
         this.checkBrowserSupport();
         this.initializeElements();
         this.initializeSpeechRecognition();
+        this.initializeAI();
         this.bindEvents();
     }
 
@@ -63,6 +68,16 @@ class AudioNote {
         this.permissionBtn = document.getElementById('permissionBtn');
         this.fallbackMode = document.getElementById('fallbackMode');
         this.manualModeBtn = document.getElementById('manualModeBtn');
+        
+        // AI Enhancement elements
+        this.enhanceBtn = document.getElementById('enhanceBtn');
+        this.enhancementMode = document.getElementById('enhancementMode');
+        this.aiStatus = document.getElementById('aiStatus');
+        this.creditsBtn = document.getElementById('creditsBtn');
+        this.creditsPanel = document.getElementById('creditsPanel');
+        this.closeCreditsBtn = document.getElementById('closeCreditsBtn');
+        this.creditsDisplay = document.getElementById('creditsDisplay');
+        this.creditsCount = document.getElementById('creditsCount');
     }
 
     initializeSpeechRecognition() {
@@ -126,6 +141,42 @@ class AudioNote {
         }
     }
 
+    initializeAI() {
+        // Load user credits and initialize display
+        this.loadUserCredits();
+        this.updateAIButtonState();
+    }
+
+    generateUserId() {
+        let userId = localStorage.getItem('audioNote_userId');
+        if (!userId) {
+            userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('audioNote_userId', userId);
+        }
+        return userId;
+    }
+
+    async loadUserCredits() {
+        try {
+            const response = await fetch(`/api/credits?userId=${this.userId}`);
+            if (response.ok) {
+                const data = await response.json();
+                this.userCredits = data.credits;
+                this.updateCreditsDisplay();
+            }
+        } catch (error) {
+            console.error('Error loading credits:', error);
+            // Fallback to local storage for demo
+            this.userCredits = parseInt(localStorage.getItem('audioNote_credits') || '5');
+            this.updateCreditsDisplay();
+        }
+    }
+
+    updateCreditsDisplay() {
+        this.creditsDisplay.textContent = this.userCredits;
+        this.creditsCount.textContent = this.userCredits;
+    }
+
     bindEvents() {
         console.log('Binding events...');
         this.recordBtn.addEventListener('click', (e) => {
@@ -143,6 +194,12 @@ class AudioNote {
             e.preventDefault();
             this.enableManualMode();
         });
+        
+        // AI Enhancement events
+        this.enhanceBtn.addEventListener('click', () => this.enhanceText());
+        this.creditsBtn.addEventListener('click', () => this.showCredits());
+        this.closeCreditsBtn.addEventListener('click', () => this.hideCredits());
+        
         this.clearBtn.addEventListener('click', () => this.clearTranscript());
         this.copyBtn.addEventListener('click', () => this.copyTranscript());
         this.shareBtn.addEventListener('click', () => this.shareTranscript());
@@ -154,6 +211,22 @@ class AudioNote {
             const text = (e.clipboardData || window.clipboardData).getData('text');
             document.execCommand('insertText', false, text);
             this.updateStats();
+        });
+        
+        // Close credits panel when clicking outside
+        this.creditsPanel.addEventListener('click', (e) => {
+            if (e.target === this.creditsPanel) {
+                this.hideCredits();
+            }
+        });
+
+        // Add buy button event listeners
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('buy-btn')) {
+                const credits = parseInt(e.target.dataset.credits);
+                const price = parseFloat(e.target.dataset.price);
+                this.purchaseCredits(credits, price);
+            }
         });
     }
 
@@ -376,6 +449,9 @@ class AudioNote {
         
         this.wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
         this.charCount.textContent = `${chars} character${chars !== 1 ? 's' : ''}`;
+        
+        // Update AI button state when text changes
+        this.updateAIButtonState();
     }
 
     clearTranscript() {
@@ -463,6 +539,154 @@ class AudioNote {
 
     hideSpinner() {
         this.spinner.classList.add('hidden');
+    }
+
+    // AI Enhancement Functions
+    updateAIButtonState() {
+        const hasText = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
+        const hasCredits = this.userCredits > 0;
+        
+        this.enhanceBtn.disabled = !hasText || !hasCredits;
+        
+        if (!hasCredits) {
+            this.enhanceBtn.textContent = '💳 Buy Credits First';
+        } else if (!hasText) {
+            this.enhanceBtn.textContent = '✨ Enhance with AI';
+        } else {
+            this.enhanceBtn.textContent = '✨ Enhance with AI';
+        }
+    }
+
+    showCredits() {
+        this.creditsPanel.classList.remove('hidden');
+        this.loadUserCredits(); // Refresh credits display
+    }
+
+    hideCredits() {
+        this.creditsPanel.classList.add('hidden');
+    }
+
+    async purchaseCredits(credits, price) {
+        try {
+            this.showMessage('Opening checkout...');
+            
+            // Create checkout session
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    userId: this.userId,
+                    credits: credits,
+                    amount: price
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create checkout session');
+            }
+
+            const data = await response.json();
+            
+            // For demo purposes, simulate successful payment
+            // In production, this would redirect to Stripe checkout
+            if (confirm(`Demo: Purchase ${credits} credits for $${price}?\n\nIn production, this would redirect to Stripe checkout.`)) {
+                // Simulate successful payment
+                this.userCredits += credits;
+                this.updateCreditsDisplay();
+                localStorage.setItem('audioNote_credits', this.userCredits.toString());
+                this.updateAIButtonState();
+                this.hideCredits();
+                this.showMessage(`Successfully added ${credits} credits!`);
+            }
+            
+        } catch (error) {
+            console.error('Purchase error:', error);
+            this.showError('Failed to process purchase: ' + error.message);
+        }
+    }
+
+    async enhanceText() {
+        const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
+        
+        if (!text) {
+            this.showError('No text to enhance. Please record or type some text first.');
+            return;
+        }
+
+        if (this.userCredits <= 0) {
+            this.showError('No credits remaining. Please purchase credits to continue.');
+            this.showCredits();
+            return;
+        }
+
+        const mode = this.enhancementMode.value;
+        
+        this.setAIStatus('processing', 'Enhancing text...');
+        this.enhanceBtn.disabled = true;
+        this.enhanceBtn.textContent = '⏳ Processing...';
+
+        try {
+            const response = await fetch('/api/enhance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    text: text,
+                    mode: mode,
+                    userId: this.userId
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.enhancedText) {
+                this.transcript.textContent = data.enhancedText;
+                this.transcript.classList.add('has-content');
+                this.updateStats();
+                
+                // Update credits
+                this.userCredits = data.credits;
+                this.updateCreditsDisplay();
+                localStorage.setItem('audioNote_credits', this.userCredits.toString());
+                
+                this.setAIStatus('success', `Text enhanced successfully! ${data.credits} credits remaining.`);
+                
+                // Clear success status after 3 seconds
+                setTimeout(() => {
+                    this.setAIStatus('', '');
+                }, 3000);
+            }
+        } catch (error) {
+            console.error('AI Enhancement error:', error);
+            if (error.message.includes('Insufficient credits')) {
+                this.setAIStatus('error', 'No credits remaining. Please purchase more credits.');
+                this.showCredits();
+            } else {
+                this.setAIStatus('error', 'Enhancement failed: ' + error.message);
+            }
+        } finally {
+            this.enhanceBtn.disabled = false;
+            this.updateAIButtonState(); // This will update the button text based on credits
+        }
+    }
+
+    setAIStatus(type, message) {
+        this.aiStatus.className = `ai-status ${type}`;
+        this.aiStatus.textContent = message;
+        
+        if (message) {
+            this.aiStatus.classList.remove('hidden');
+        } else {
+            this.aiStatus.classList.add('hidden');
+        }
     }
 }
 
