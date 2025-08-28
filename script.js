@@ -13,6 +13,7 @@ class AudioNote {
         this.animationFrame = null;
         this.finalTranscript = '';
         this.lastInterimTranscript = '';
+        this.recordedTranscript = '';
         
         // User management
         this.user = null;
@@ -22,7 +23,7 @@ class AudioNote {
         console.log('Initializing AudioNote...');
         this.checkBrowserSupport();
         this.initializeElements();
-        // Speech recognition initialization removed
+        this.initializeSpeechRecognition();
         this.initializeAI();
         this.bindEvents();
     }
@@ -124,22 +125,17 @@ class AudioNote {
 
             this.recognition.onstart = () => {
                 console.log('Speech recognition started');
+                this.recordedTranscript = ''; // Reset for new recording
             };
 
             this.recognition.onresult = (event) => {
-                let interimTranscript = '';
-                
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
                         console.log('Final transcript:', transcript);
-                        this.finalTranscript += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
+                        this.recordedTranscript += transcript + ' ';
                     }
                 }
-
-                this.updateTranscript(interimTranscript);
             };
 
             this.recognition.onerror = (event) => {
@@ -342,8 +338,9 @@ class AudioNote {
     async startRecording() {
         console.log('Starting recording...');
         
-        // Clear previous transcript
+        // Clear previous transcript and reset recorded transcript
         this.transcript.textContent = 'Recording... Speak now!';
+        this.recordedTranscript = '';
         this.transcript.classList.add('recording-state');
         
         try {
@@ -367,6 +364,16 @@ class AudioNote {
             this.recordingStatus.classList.add('active');
 
             this.startTimer();
+            
+            // Start speech recognition to capture transcript
+            if (this.recognition) {
+                console.log('Starting speech recognition...');
+                try {
+                    this.recognition.start();
+                } catch (speechError) {
+                    console.error('Speech recognition start error:', speechError);
+                }
+            }
             
             // Check if user is not signed in and limit to 30 seconds
             if (!this.user) {
@@ -451,6 +458,10 @@ class AudioNote {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
             this.mediaRecorder.stop();
         }
+        
+        if (this.recognition) {
+            this.recognition.stop();
+        }
 
         if (this.animationFrame) {
             cancelAnimationFrame(this.animationFrame);
@@ -523,29 +534,19 @@ class AudioNote {
         console.log('Processing recorded audio...');
         
         try {
-            // Convert audio blob to base64 for API transmission
-            const audioData = await this.blobToBase64(audioBlob);
+            // Show processing state briefly
+            this.setProcessingState(true, 'Processing your recording...');
             
-            // Show processing state
-            this.setProcessingState(true, 'Transcribing your audio...');
+            // Use the transcript captured during recording
+            const transcript = this.recordedTranscript.trim();
             
-            // Call our transcription API
-            const response = await fetch('/api/transcribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    audioData: audioData,
-                    sessionToken: this.sessionToken
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (response.ok && data.transcript) {
-                // Display structured output like email
-                this.displayStructuredOutput(data.transcript, data.structured);
+            if (transcript) {
+                // Display the actual transcription result
+                this.displayTranscriptionResult(transcript);
             } else {
-                throw new Error(data.error || 'Transcription failed');
+                // No transcript was captured
+                this.transcript.textContent = 'No speech detected. Please try recording again and speak clearly.';
+                this.transcript.classList.remove('processing-state');
             }
             
         } catch (error) {
@@ -554,7 +555,9 @@ class AudioNote {
             this.transcript.classList.remove('processing-state');
             this.showError('Failed to process recording: ' + error.message);
         } finally {
-            this.setProcessingState(false);
+            setTimeout(() => {
+                this.setProcessingState(false);
+            }, 500); // Brief delay to show processing state
         }
     }
     
@@ -578,46 +581,13 @@ class AudioNote {
         }
     }
     
-    displayStructuredOutput(transcript, structured) {
-        // Create email-like structure
-        const emailStructure = {
-            subject: this.extractSubject(transcript),
-            body: structured || transcript,
-            timestamp: new Date().toLocaleString(),
-            wordCount: transcript.split(' ').length
-        };
-        
-        // Update UI with structured format
-        this.transcript.innerHTML = this.formatAsEmail(emailStructure);
-        this.transcript.classList.remove('processing-state', 'recording-state');
-        this.transcript.classList.add('has-content', 'email-format');
+    displayTranscriptionResult(transcript) {
+        // Simple text display - no email formatting
+        this.transcript.textContent = transcript;
+        this.transcript.classList.remove('processing-state', 'recording-state', 'email-format');
+        this.transcript.classList.add('has-content');
         
         this.updateStats();
-    }
-    
-    extractSubject(text) {
-        // Extract first sentence or first 50 characters as subject
-        const firstSentence = text.split('.')[0];
-        return firstSentence.length > 50 ? 
-            firstSentence.substring(0, 47) + '...' : 
-            firstSentence;
-    }
-    
-    formatAsEmail(data) {
-        return `
-            <div class="email-header">
-                <div class="email-subject">
-                    <strong>Subject:</strong> ${data.subject}
-                </div>
-                <div class="email-meta">
-                    <span class="timestamp">${data.timestamp}</span>
-                    <span class="word-count">${data.wordCount} words</span>
-                </div>
-            </div>
-            <div class="email-body">
-                ${data.body.replace(/\n/g, '<br>')}
-            </div>
-        `;
     }
 
     clearTranscript() {
