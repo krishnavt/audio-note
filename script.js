@@ -102,6 +102,10 @@ class AudioNote {
         this.authSwitchBtn = document.getElementById('authSwitchBtn');
         this.authSwitchText = document.getElementById('authSwitchText');
         this.sentToEmail = document.getElementById('sentToEmail');
+        
+        // User menu elements
+        this.userIconBtn = document.getElementById('userIconBtn');
+        this.userDropdown = document.getElementById('userDropdown');
     }
 
     initializeSpeechRecognition() {
@@ -215,9 +219,15 @@ class AudioNote {
         const seconds = Math.round((this.userMinutes - minutes) * 60);
         const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         
-        this.timeDisplay.textContent = timeStr;
-        this.timeCount.textContent = `${this.userMinutes.toFixed(1)}`;
-        this.userTime.textContent = `${timeStr} min`;
+        if (this.timeDisplay) {
+            this.timeDisplay.textContent = timeStr;
+        }
+        if (this.timeCount) {
+            this.timeCount.textContent = `${this.userMinutes.toFixed(1)}`;
+        }
+        if (this.userTime) {
+            this.userTime.textContent = `${timeStr} min`;
+        }
     }
 
     bindEvents() {
@@ -253,6 +263,9 @@ class AudioNote {
         this.backToEmailBtn.addEventListener('click', () => this.backToEmailStep());
         this.authSwitchBtn.addEventListener('click', () => this.toggleAuthMode());
         
+        // User menu events
+        this.userIconBtn.addEventListener('click', () => this.toggleUserDropdown());
+        
         this.clearBtn.addEventListener('click', () => this.clearTranscript());
         this.copyBtn.addEventListener('click', () => this.copyTranscript());
         this.shareBtn.addEventListener('click', () => this.shareTranscript());
@@ -270,6 +283,13 @@ class AudioNote {
         this.timePanel.addEventListener('click', (e) => {
             if (e.target === this.timePanel) {
                 this.hideTimePanel();
+            }
+        });
+        
+        // Close user dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.userIconBtn.contains(e.target) && !this.userDropdown.contains(e.target)) {
+                this.hideUserDropdown();
             }
         });
 
@@ -865,6 +885,14 @@ class AudioNote {
 
     resendCode() {
         this.sendVerificationCode();
+    }
+    
+    toggleUserDropdown() {
+        this.userDropdown.classList.toggle('hidden');
+    }
+    
+    hideUserDropdown() {
+        this.userDropdown.classList.add('hidden');
     }
 
     // AI Enhancement is now automatic - no button needed
