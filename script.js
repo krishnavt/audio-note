@@ -460,7 +460,10 @@ class AudioNote {
     }
 
     updateAudioLevel() {
-        if (!this.isRecording || !this.analyser) return;
+        if (!this.isRecording || !this.analyser) {
+            console.log('updateAudioLevel stopped - recording:', this.isRecording, 'analyser:', !!this.analyser);
+            return;
+        }
 
         this.analyser.getByteFrequencyData(this.dataArray);
         
@@ -474,6 +477,11 @@ class AudioNote {
         
         this.audioLevel.style.width = percentage + '%';
         
+        // Only log occasionally to avoid spam
+        if (Math.random() < 0.01) { // 1% of the time
+            console.log('Audio level - average:', average, 'percentage:', percentage);
+        }
+        
         // Update waveform bars based on audio levels
         this.updateWaveform(average);
 
@@ -481,10 +489,22 @@ class AudioNote {
     }
 
     updateWaveform(audioLevel) {
+        if (!this.waveform) {
+            console.error('Waveform element not found');
+            return;
+        }
+        
         const waveBars = this.waveform.querySelectorAll('.wave-bar');
+        if (waveBars.length === 0) {
+            console.error('No wave bars found in waveform');
+            return;
+        }
+        
         const normalizedLevel = audioLevel / 255; // 0 to 1
         const minHeight = 8; // Minimum bar height in pixels
         const maxHeight = 35; // Maximum bar height in pixels
+        
+        console.log('Updating waveform with audio level:', audioLevel, 'normalized:', normalizedLevel);
         
         // Create variation across bars based on audio level
         waveBars.forEach((bar, index) => {

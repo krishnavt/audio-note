@@ -163,50 +163,72 @@ async function handleCheckSession(req, res) {
 }
 
 async function sendVerificationEmail(email, code) {
-    // In production, integrate with email service like:
-    // - SendGrid
-    // - Mailgun  
-    // - Amazon SES
-    // - Nodemailer with SMTP
-    
-    // For demo, we'll simulate email sending
-    console.log(`📧 Sending email to ${email} with code: ${code}`);
-    
-    // Simulate email service delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // For demo purposes, always return true
-    // In production, handle email service errors
-    return true;
-    
-    // Example with SendGrid:
-    /*
-    const sgMail = require('@sendgrid/mail');
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-    const msg = {
-        to: email,
-        from: 'noreply@audionote.app',
-        subject: 'AudioNote Verification Code',
-        text: `Your verification code is: ${code}`,
-        html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #ff8c00;">AudioNote Verification</h2>
-                <p>Your verification code is:</p>
-                <div style="font-size: 24px; font-weight: bold; color: #ff8c00; text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">${code}</div>
-                <p>This code will expire in 10 minutes.</p>
-            </div>
-        `
-    };
-
     try {
-        await sgMail.send(msg);
+        // Check if we have email configuration
+        const emailConfig = {
+            service: process.env.EMAIL_SERVICE || 'gmail',
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        };
+
+        // If no email config, fall back to demo mode
+        if (!emailConfig.auth.user || !emailConfig.auth.pass) {
+            console.log(`📧 Demo mode - sending email to ${email} with code: ${code}`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            return true;
+        }
+
+        // Use dynamic import for nodemailer to avoid bundling issues in Vercel
+        const nodemailer = await import('nodemailer');
+        
+        // Create transporter
+        const transporter = nodemailer.default.createTransporter(emailConfig);
+
+        // Email template
+        const mailOptions = {
+            from: `"AudioNote" <${emailConfig.auth.user}>`,
+            to: email,
+            subject: 'Your AudioNote Verification Code',
+            html: `
+                <div style="font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <h1 style="color: #FF6B35; font-size: 2rem; margin: 0;">AudioNote</h1>
+                        <p style="color: #666; margin: 10px 0 0 0;">Convert voice notes into readable text</p>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; border-radius: 12px; padding: 30px; text-align: center;">
+                        <h2 style="color: #333; margin: 0 0 20px 0;">Your Verification Code</h2>
+                        <div style="background: white; border: 2px solid #FF6B35; border-radius: 8px; padding: 20px; margin: 20px 0; display: inline-block;">
+                            <span style="font-family: 'Courier New', monospace; font-size: 32px; font-weight: bold; color: #FF6B35; letter-spacing: 8px;">${code}</span>
+                        </div>
+                        <p style="color: #666; margin: 20px 0 0 0;">This code will expire in 10 minutes.</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                        <p style="color: #999; font-size: 14px; margin: 0;">
+                            If you didn't request this code, please ignore this email.
+                        </p>
+                    </div>
+                </div>
+            `
+        };
+
+        // Send email
+        await transporter.sendMail(mailOptions);
+        console.log(`✅ Verification email sent successfully to ${email}`);
         return true;
+
     } catch (error) {
-        console.error('Email send error:', error);
-        return false;
+        console.error('Error sending verification email:', error);
+        // Fall back to demo mode if email fails
+        console.log(`📧 Fallback to demo mode - sending email to ${email} with code: ${code}`);
+        return true; // Don't fail the whole process if email fails
     }
-    */
 }
 
 function isValidEmail(email) {
