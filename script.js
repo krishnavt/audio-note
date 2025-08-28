@@ -6,6 +6,7 @@ class AudioNote {
         this.recognition = null;
         this.recordingStartTime = null;
         this.recordingTimer = null;
+        this.timerInterval = null;
         this.audioContext = null;
         this.analyser = null;
         this.microphone = null;
@@ -469,8 +470,40 @@ class AudioNote {
         const percentage = (average / 255) * 100;
         
         this.audioLevel.style.width = percentage + '%';
+        
+        // Update waveform bars based on audio levels
+        this.updateWaveform(average);
 
         this.animationFrame = requestAnimationFrame(() => this.updateAudioLevel());
+    }
+
+    updateWaveform(audioLevel) {
+        const waveBars = this.waveform.querySelectorAll('.wave-bar');
+        const normalizedLevel = audioLevel / 255; // 0 to 1
+        const minHeight = 8; // Minimum bar height in pixels
+        const maxHeight = 35; // Maximum bar height in pixels
+        
+        // Create variation across bars based on audio level
+        waveBars.forEach((bar, index) => {
+            // Add some randomness and variation to make it look more natural
+            const variation = Math.random() * 0.3 + 0.7; // 0.7 to 1.0
+            const centerDistance = Math.abs(index - (waveBars.length / 2)) / (waveBars.length / 2);
+            const centerBoost = 1 - centerDistance * 0.3; // Center bars are slightly higher
+            
+            const finalLevel = normalizedLevel * variation * centerBoost;
+            const height = minHeight + (maxHeight - minHeight) * finalLevel;
+            
+            bar.style.height = `${height}px`;
+            bar.style.opacity = normalizedLevel > 0.1 ? 1 : 0.4;
+        });
+    }
+
+    resetWaveform() {
+        const waveBars = this.waveform.querySelectorAll('.wave-bar');
+        waveBars.forEach(bar => {
+            bar.style.height = '8px';
+            bar.style.opacity = '0.4';
+        });
     }
 
     stopRecording() {
@@ -499,6 +532,7 @@ class AudioNote {
         
         this.stopTimer();
         this.audioLevel.style.width = '0%';
+        this.resetWaveform();
         
         // Show processing message
         this.transcript.textContent = 'Processing your recording...';
@@ -508,7 +542,7 @@ class AudioNote {
 
     startTimer() {
         this.recordingStartTime = Date.now();
-        this.recordingTimer = setInterval(() => {
+        this.timerInterval = setInterval(() => {
             const elapsed = Date.now() - this.recordingStartTime;
             const minutes = Math.floor(elapsed / 60000);
             const seconds = Math.floor((elapsed % 60000) / 1000);
@@ -518,9 +552,9 @@ class AudioNote {
     }
 
     stopTimer() {
-        if (this.recordingTimer) {
-            clearInterval(this.recordingTimer);
-            this.recordingTimer = null;
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
         }
         this.recordingTime.textContent = '00:00';
     }
