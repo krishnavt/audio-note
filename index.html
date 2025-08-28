@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioNote - Convert voice notes to text</title>
+    <meta name="description" content="AudioNote converts unstructured voice notes into text that's easy to read and ready to share">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 class="logo">AudioNote</h1>
+            <p class="tagline">Convert voice notes into readable text</p>
+        </header>
+
+        <main class="app">
+            <div class="recording-section">
+                <div class="recording-controls">
+                    <button id="recordBtn" class="record-button">
+                        <div class="record-icon"></div>
+                        <span class="record-text">Click to record</span>
+                    </button>
+                    <div class="recording-status">
+                        <span id="recordingTime">00:00</span>
+                        <div id="audioLevel" class="audio-level">
+                            <div class="level-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="recording-info">
+                    <p id="recordingInfo">Start speaking to convert your voice into text</p>
+                    <button id="permissionBtn" class="permission-button hidden">Grant Microphone Permission</button>
+                    <div id="fallbackMode" class="fallback-mode hidden">
+                        <p>Speech recognition not available. You can still record audio or type manually.</p>
+                        <button id="manualModeBtn" class="action-btn">Switch to Manual Mode</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="transcript-section">
+                <div class="transcript-header">
+                    <h3>Transcript</h3>
+                    <div class="transcript-actions">
+                        <button id="clearBtn" class="action-btn">Clear</button>
+                        <button id="copyBtn" class="action-btn">Copy</button>
+                        <button id="shareBtn" class="action-btn">Share</button>
+                    </div>
+                </div>
+                <div id="transcript" class="transcript-content" contenteditable="true">
+                    Your transcribed text will appear here...
+                </div>
+                <div class="transcript-stats">
+                    <span id="wordCount">0 words</span>
+                    <span id="charCount">0 characters</span>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="features">
+                <div class="feature">
+                    <h4>🎤 Voice Recording</h4>
+                    <p>High-quality audio capture</p>
+                </div>
+                <div class="feature">
+                    <h4>📝 Smart Transcription</h4>
+                    <p>Accurate speech-to-text conversion</p>
+                </div>
+                <div class="feature">
+                    <h4>✏️ Easy Editing</h4>
+                    <p>Edit and refine your transcripts</p>
+                </div>
+                <div class="feature">
+                    <h4>📤 Quick Sharing</h4>
+                    <p>Copy or share your notes instantly</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="loadingSpinner" class="spinner hidden">
+        <div class="spinner-icon"></div>
+        <p>Processing your audio...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
