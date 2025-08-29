@@ -428,16 +428,22 @@ class AudioNote {
     }
 
     setupAudioVisualization(stream) {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.analyser = this.audioContext.createAnalyser();
-        this.microphone = this.audioContext.createMediaStreamSource(stream);
-        
-        this.analyser.fftSize = 256;
-        const bufferLength = this.analyser.frequencyBinCount;
-        this.dataArray = new Uint8Array(bufferLength);
-        
-        this.microphone.connect(this.analyser);
-        this.updateAudioLevel();
+        console.log('Setting up audio visualization...');
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            this.microphone = this.audioContext.createMediaStreamSource(stream);
+            
+            this.analyser.fftSize = 256;
+            const bufferLength = this.analyser.frequencyBinCount;
+            this.dataArray = new Uint8Array(bufferLength);
+            
+            this.microphone.connect(this.analyser);
+            console.log('Audio context setup complete');
+            this.updateAudioLevel();
+        } catch (error) {
+            console.error('Failed to setup audio visualization:', error);
+        }
     }
 
     setupMediaRecorder(stream) {
@@ -500,24 +506,32 @@ class AudioNote {
             return;
         }
         
-        const normalizedLevel = audioLevel / 255; // 0 to 1
+        let normalizedLevel = audioLevel / 255; // 0 to 1
+        
+        // Boost sensitivity for lower audio levels
+        normalizedLevel = Math.min(1, normalizedLevel * 3); // Amplify by 3x
+        normalizedLevel = Math.pow(normalizedLevel, 0.6); // Apply curve for better response
+        
         const minHeight = 8; // Minimum bar height in pixels
         const maxHeight = 35; // Maximum bar height in pixels
         
-        console.log('Updating waveform with audio level:', audioLevel, 'normalized:', normalizedLevel);
+        // Only log occasionally to avoid spam
+        if (Math.random() < 0.005) { // 0.5% of the time
+            console.log('Updating waveform - raw:', audioLevel, 'boosted:', normalizedLevel);
+        }
         
         // Create variation across bars based on audio level
         waveBars.forEach((bar, index) => {
             // Add some randomness and variation to make it look more natural
-            const variation = Math.random() * 0.3 + 0.7; // 0.7 to 1.0
+            const variation = Math.random() * 0.4 + 0.8; // 0.8 to 1.2
             const centerDistance = Math.abs(index - (waveBars.length / 2)) / (waveBars.length / 2);
             const centerBoost = 1 - centerDistance * 0.3; // Center bars are slightly higher
             
-            const finalLevel = normalizedLevel * variation * centerBoost;
+            const finalLevel = Math.min(1, normalizedLevel * variation * centerBoost);
             const height = minHeight + (maxHeight - minHeight) * finalLevel;
             
             bar.style.height = `${height}px`;
-            bar.style.opacity = normalizedLevel > 0.1 ? 1 : 0.4;
+            bar.style.opacity = normalizedLevel > 0.05 ? 1 : 0.4;
         });
     }
 
