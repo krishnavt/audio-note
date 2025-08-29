@@ -178,7 +178,8 @@ async function sendVerificationEmail(email, code) {
 
         // If no email config, fall back to demo mode
         if (!emailConfig.auth.user || !emailConfig.auth.pass) {
-            console.log(`📧 Demo mode - sending email to ${email} with code: ${code}`);
+            console.log(`📧 Demo mode - Code for ${email}: ${code}`);
+            console.log(`📧 In production, configure EMAIL_USER and EMAIL_PASS environment variables`);
             await new Promise(resolve => setTimeout(resolve, 500));
             return true;
         }
