@@ -536,8 +536,8 @@ class AudioNote {
         normalizedLevel = Math.min(1, normalizedLevel * 3); // Amplify by 3x
         normalizedLevel = Math.pow(normalizedLevel, 0.6); // Apply curve for better response
         
-        const minHeight = 12; // Minimum bar height in pixels
-        const maxHeight = 50; // Maximum bar height in pixels
+        const minHeight = 20; // Minimum bar height in pixels
+        const maxHeight = 80; // Maximum bar height in pixels
         
         // Only log occasionally to avoid spam
         if (Math.random() < 0.005) { // 0.5% of the time
@@ -574,7 +574,7 @@ class AudioNote {
     resetWaveform() {
         const waveBars = this.waveform.querySelectorAll('.wave-bar');
         waveBars.forEach(bar => {
-            bar.style.height = '12px';
+            bar.style.height = '20px';
             bar.style.opacity = '0.6';
         });
     }
