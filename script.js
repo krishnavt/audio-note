@@ -146,14 +146,16 @@ class AudioNote {
             };
 
             this.recognition.onresult = (event) => {
+                console.log('Speech recognition result event:', event.results.length, 'results');
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
+                    const confidence = event.results[i][0].confidence;
                     if (event.results[i].isFinal) {
-                        console.log('Final transcript:', transcript);
+                        console.log('Final transcript:', transcript, 'confidence:', confidence);
                         this.recordedTranscript += transcript + ' ';
                         console.log('Total recorded transcript:', this.recordedTranscript);
                     } else {
-                        console.log('Interim transcript:', transcript);
+                        console.log('Interim transcript:', transcript, 'confidence:', confidence);
                     }
                 }
             };
@@ -389,11 +391,12 @@ class AudioNote {
             });
             console.log('Microphone access granted');
 
-            this.setupAudioVisualization(stream);
-            this.setupMediaRecorder(stream);
-
+            // Set recording state BEFORE setting up audio visualization
             this.isRecording = true;
             this.recordBtn.classList.add('recording');
+
+            this.setupAudioVisualization(stream);
+            this.setupMediaRecorder(stream);
             // No text to update - button is icon only
             this.recordingStatus.classList.add('active');
             this.recordingTimer.classList.add('active'); // Show timer above button
@@ -406,9 +409,19 @@ class AudioNote {
                 console.log('Starting speech recognition...');
                 try {
                     this.recognition.start();
+                    console.log('Speech recognition start() called successfully');
                 } catch (speechError) {
                     console.error('Speech recognition start error:', speechError);
+                    if (speechError.name === 'InvalidStateError') {
+                        console.log('Recognition already started, stopping and restarting...');
+                        this.recognition.stop();
+                        setTimeout(() => {
+                            this.recognition.start();
+                        }, 100);
+                    }
                 }
+            } else {
+                console.error('No speech recognition available');
             }
             
             // Check if user is not signed in and limit to 30 seconds
