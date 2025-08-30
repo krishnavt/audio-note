@@ -179,7 +179,10 @@ async function sendVerificationEmail(email, code) {
         // If no email config, fall back to demo mode
         if (!emailConfig.auth.user || !emailConfig.auth.pass) {
             console.log(`📧 Demo mode - Code for ${email}: ${code}`);
-            console.log(`📧 In production, configure EMAIL_USER and EMAIL_PASS environment variables`);
+            console.log(`📧 To enable real emails, set these Vercel environment variables:`);
+            console.log(`   EMAIL_USER=your-gmail@gmail.com`);
+            console.log(`   EMAIL_PASS=your-app-password`);
+            console.log(`📧 Get Gmail App Password: https://support.google.com/mail/answer/185833`);
             await new Promise(resolve => setTimeout(resolve, 500));
             return true;
         }

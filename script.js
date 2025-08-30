@@ -110,6 +110,17 @@ class AudioNote {
         
         // Waveform element
         this.waveform = document.getElementById('waveform');
+        
+        // Debug logging for elements
+        console.log('Elements initialized:');
+        console.log('- Waveform element:', this.waveform);
+        console.log('- Recording timer:', this.recordingTimer);
+        console.log('- Audio level:', this.audioLevel);
+        
+        if (this.waveform) {
+            const waveBars = this.waveform.querySelectorAll('.wave-bar');
+            console.log('- Wave bars found:', waveBars.length);
+        }
     }
 
     initializeSpeechRecognition() {
@@ -483,9 +494,9 @@ class AudioNote {
         
         this.audioLevel.style.width = percentage + '%';
         
-        // Only log occasionally to avoid spam
-        if (Math.random() < 0.01) { // 1% of the time
-            console.log('Audio level - average:', average, 'percentage:', percentage);
+        // Log more frequently during testing
+        if (Math.random() < 0.02) { // 2% of the time
+            console.log('Audio level - average:', average, 'percentage:', percentage, 'recording:', this.isRecording);
         }
         
         // Update waveform bars based on audio levels
