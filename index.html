@@ -80,25 +80,16 @@
             </div>
 
             <div class="transcript-section">
-                <div class="transcript-header">
-                    <h3>Transcript</h3>
+                <div class="transcript-container">
+                    <div id="transcript" class="transcript-content" contenteditable="true"></div>
                     <div class="transcript-actions">
-                        <div class="basic-actions">
-                            <button id="timeBtn" class="action-btn">⏱️ <span id="timeDisplay">1:00</span></button>
-                            <button id="clearBtn" class="action-btn">Clear</button>
-                            <button id="copyBtn" class="action-btn">Copy</button>
-                            <button id="shareBtn" class="action-btn">Share</button>
-                        </div>
+                        <button id="clearBtn" class="action-btn">Clear</button>
+                        <button id="copyBtn" class="action-btn">Copy</button>
+                        <button id="shareBtn" class="action-btn">Share</button>
                     </div>
-                </div>
-                <div id="transcript" class="transcript-content" contenteditable="true">
-                    Your transcribed text will appear here...
-                </div>
-                <div class="transcript-stats">
-                    <span id="wordCount">0 words</span>
-                    <span id="charCount">0 characters</span>
                     <div id="aiStatus" class="ai-status hidden"></div>
                 </div>
+            </div>
 
                 <!-- Authentication Modals -->
                 <div id="authModal" class="auth-modal hidden">

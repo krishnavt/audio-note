@@ -375,7 +375,7 @@ class AudioNote {
         console.log('Starting recording...');
         
         // Clear previous transcript and reset recorded transcript
-        this.transcript.textContent = 'Recording... Speak now!';
+        this.transcript.textContent = 'Recording...';
         this.recordedTranscript = '';
         this.transcript.classList.add('recording-state');
         
@@ -653,14 +653,7 @@ class AudioNote {
     }
 
     updateStats() {
-        const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
-        const words = text ? text.split(/\s+/).length : 0;
-        const chars = text.length;
-        
-        this.wordCount.textContent = `${words} word${words !== 1 ? 's' : ''}`;
-        this.charCount.textContent = `${chars} character${chars !== 1 ? 's' : ''}`;
-        
-        // Update AI button state when text changes
+        // Minimal - no word/character count display
         this.updateAIButtonState();
     }
     
@@ -773,13 +766,13 @@ class AudioNote {
     clearTranscript() {
         this.finalTranscript = '';
         this.lastInterimTranscript = '';
-        this.transcript.textContent = 'Your transcribed text will appear here...';
+        this.transcript.textContent = '';
         this.transcript.classList.remove('has-content');
         this.updateStats();
     }
 
     async copyTranscript() {
-        const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
+        const text = this.transcript.textContent.trim();
         
         if (!text) {
             this.showMessage('No text to copy');
@@ -796,7 +789,7 @@ class AudioNote {
     }
 
     shareTranscript() {
-        const text = this.transcript.textContent.replace('Your transcribed text will appear here...', '').trim();
+        const text = this.transcript.textContent.trim();
         
         if (!text) {
             this.showMessage('No text to share');

@@ -429,37 +429,17 @@ header {
     margin-top: 2rem;
 }
 
-.transcript-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-    gap: 1rem;
-}
-
-.transcript-header h3 {
-    color: #333;
-    font-size: 1.4rem;
-    margin: 0;
+.transcript-container {
+    position: relative;
 }
 
 .transcript-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
     display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-end;
-}
-
-.ai-enhancement {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-.basic-actions {
-    display: flex;
-    gap: 0.5rem;
+    gap: 8px;
+    z-index: 10;
 }
 
 .enhancement-select {
@@ -499,19 +479,22 @@ header {
 }
 
 .action-btn {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
-    color: #495057;
+    font-size: 0.8rem;
+    color: #666;
     transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .action-btn:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: rgba(255, 255, 255, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .transcript-content {
@@ -524,7 +507,7 @@ header {
     font-size: 1rem;
     line-height: 1.6;
     color: #8e8e93;
-    background: #f5f5f7;
+    background: #e8e8ed;
     transition: all 0.3s ease;
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
     font-weight: 400;
@@ -539,11 +522,11 @@ header {
 .transcript-content:focus {
     outline: none;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.08);
-    background: #f5f5f7;
+    background: #e8e8ed;
 }
 
 .transcript-content.has-content {
-    background: #f5f5f7;
+    background: #e8e8ed;
     color: #1d1d1f;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15), 0 6px 12px rgba(0, 0, 0, 0.08);
     font-style: normal;
@@ -552,7 +535,7 @@ header {
 
 .transcript-content.recording-state {
     color: #FF6B35;
-    background: #f5f5f7;
+    background: #e8e8ed;
     font-weight: 500;
     text-align: center;
     animation: pulse 1.5s ease-in-out infinite;
@@ -563,7 +546,7 @@ header {
 
 .transcript-content.processing-state {
     color: #8e8e93;
-    background: #f5f5f7;
+    background: #e8e8ed;
     font-style: italic;
     text-align: center;
     border: 1px solid rgba(0, 0, 0, 0.1);
@@ -641,14 +624,6 @@ header {
     margin-bottom: 0.5rem;
 }
 
-.transcript-stats {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 1rem;
-    font-size: 0.9rem;
-    color: #6c757d;
-}
 
 .ai-status {
     padding: 0.25rem 0.75rem;
