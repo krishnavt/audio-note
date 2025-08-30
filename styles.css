@@ -365,18 +365,19 @@ header {
 .waveform {
     display: flex;
     align-items: center;
-    gap: 3px;
-    height: 40px;
+    gap: 2px;
+    height: 60px;
     margin-top: 1rem;
     justify-content: center;
 }
 
 .wave-bar {
-    width: 3px;
-    height: 8px;
-    background: #FF6B35;
-    border-radius: 1.5px;
-    transition: height 0.1s ease, opacity 0.1s ease;
+    width: 4px;
+    height: 12px;
+    background: linear-gradient(180deg, #FF6B35, #F7931E);
+    border-radius: 2px;
+    transition: height 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
 }
 
 

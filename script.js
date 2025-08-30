@@ -536,34 +536,46 @@ class AudioNote {
         normalizedLevel = Math.min(1, normalizedLevel * 3); // Amplify by 3x
         normalizedLevel = Math.pow(normalizedLevel, 0.6); // Apply curve for better response
         
-        const minHeight = 8; // Minimum bar height in pixels
-        const maxHeight = 35; // Maximum bar height in pixels
+        const minHeight = 12; // Minimum bar height in pixels
+        const maxHeight = 50; // Maximum bar height in pixels
         
         // Only log occasionally to avoid spam
         if (Math.random() < 0.005) { // 0.5% of the time
             console.log('Updating waveform - raw:', audioLevel, 'boosted:', normalizedLevel);
         }
         
-        // Create variation across bars based on audio level
+        // Create elegant sine wave pattern
+        const time = Date.now() * 0.005; // Slow time for smooth animation
         waveBars.forEach((bar, index) => {
-            // Add some randomness and variation to make it look more natural
-            const variation = Math.random() * 0.4 + 0.8; // 0.8 to 1.2
-            const centerDistance = Math.abs(index - (waveBars.length / 2)) / (waveBars.length / 2);
-            const centerBoost = 1 - centerDistance * 0.3; // Center bars are slightly higher
+            const barCount = waveBars.length;
+            const position = (index / barCount) * Math.PI * 2; // Position in sine wave
             
-            const finalLevel = Math.min(1, normalizedLevel * variation * centerBoost);
+            // Create multiple sine waves for complexity
+            const wave1 = Math.sin(position + time) * 0.4;
+            const wave2 = Math.sin(position * 2 + time * 1.5) * 0.3;
+            const wave3 = Math.sin(position * 0.5 + time * 0.8) * 0.3;
+            
+            // Combine waves and apply audio level
+            const waveHeight = (wave1 + wave2 + wave3) * 0.5 + 0.5; // Normalize to 0-1
+            const audioInfluence = normalizedLevel * 0.8 + 0.2; // Always some base height
+            
+            // Create smooth distribution with center emphasis
+            const centerDistance = Math.abs(index - (barCount / 2)) / (barCount / 2);
+            const centerBoost = Math.cos(centerDistance * Math.PI * 0.5); // Smooth falloff
+            
+            const finalLevel = Math.min(1, waveHeight * audioInfluence * centerBoost);
             const height = minHeight + (maxHeight - minHeight) * finalLevel;
             
             bar.style.height = `${height}px`;
-            bar.style.opacity = normalizedLevel > 0.05 ? 1 : 0.4;
+            bar.style.opacity = 0.6 + (normalizedLevel * 0.4); // Smooth opacity changes
         });
     }
 
     resetWaveform() {
         const waveBars = this.waveform.querySelectorAll('.wave-bar');
         waveBars.forEach(bar => {
-            bar.style.height = '8px';
-            bar.style.opacity = '0.4';
+            bar.style.height = '12px';
+            bar.style.opacity = '0.6';
         });
     }
 
