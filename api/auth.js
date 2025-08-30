@@ -164,8 +164,11 @@ async function handleCheckSession(req, res) {
 
 async function sendVerificationEmail(email, code) {
     try {
+        // Use dynamic import for nodemailer
+        const nodemailer = await import('nodemailer');
+        
         // Check if we have email configuration
-        const emailConfig = {
+        let emailConfig = {
             service: process.env.EMAIL_SERVICE || 'gmail',
             host: process.env.SMTP_HOST,
             port: process.env.SMTP_PORT || 587,
@@ -176,20 +179,33 @@ async function sendVerificationEmail(email, code) {
             }
         };
 
-        // If no email config, fall back to demo mode
+        // If no email config, use Ethereal Email for testing
         if (!emailConfig.auth.user || !emailConfig.auth.pass) {
-            console.log(`📧 Demo mode - Code for ${email}: ${code}`);
-            console.log(`📧 To enable real emails, set these Vercel environment variables:`);
-            console.log(`   EMAIL_USER=your-gmail@gmail.com`);
-            console.log(`   EMAIL_PASS=your-app-password`);
-            console.log(`📧 Get Gmail App Password: https://support.google.com/mail/answer/185833`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            return true;
+            console.log(`📧 No email config found, creating test account...`);
+            
+            try {
+                // Create test account with Ethereal Email (free testing service)
+                const testAccount = await nodemailer.default.createTestAccount();
+                console.log(`📧 Test account created: ${testAccount.user}`);
+                
+                emailConfig = {
+                    host: 'smtp.ethereal.email',
+                    port: 587,
+                    secure: false,
+                    auth: {
+                        user: testAccount.user,
+                        pass: testAccount.pass
+                    }
+                };
+            } catch (testError) {
+                // Fallback to demo mode if test account creation fails
+                console.log(`📧 Demo mode - Code for ${email}: ${code}`);
+                console.log(`📧 Test account creation failed, using demo mode`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return true;
+            }
         }
 
-        // Use dynamic import for nodemailer to avoid bundling issues in Vercel
-        const nodemailer = await import('nodemailer');
-        
         // Create transporter
         const transporter = nodemailer.default.createTransporter(emailConfig);
 
@@ -223,8 +239,17 @@ async function sendVerificationEmail(email, code) {
         };
 
         // Send email
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Verification email sent successfully to ${email}`);
+        const info = await transporter.sendMail(mailOptions);
+        
+        // If using Ethereal (test), log the preview URL
+        if (emailConfig.host === 'smtp.ethereal.email') {
+            const previewUrl = nodemailer.default.getTestMessageUrl(info);
+            console.log(`📧 Test email sent! Preview: ${previewUrl}`);
+            console.log(`📧 Code for ${email}: ${code}`);
+        } else {
+            console.log(`✅ Verification email sent successfully to ${email}`);
+        }
+        
         return true;
 
     } catch (error) {
