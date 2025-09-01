@@ -28,6 +28,7 @@ class AudioNote {
         this.initializeAI();
         this.bindEvents();
         this.updateTimeDisplay(); // Initialize time display
+        this.restoreSession(); // Restore user session if exists
     }
 
     checkBrowserSupport() {
@@ -107,6 +108,23 @@ class AudioNote {
         // User menu elements
         this.userIconBtn = document.getElementById('userIconBtn');
         this.userDropdown = document.getElementById('userDropdown');
+        
+        // Profile modal elements
+        this.profileBtn = document.getElementById('profileBtn');
+        this.profileModal = document.getElementById('profileModal');
+        this.closeProfileModal = document.getElementById('closeProfileModal');
+        this.accountTab = document.getElementById('accountTab');
+        this.billingTab = document.getElementById('billingTab');
+        this.transcriptsTab = document.getElementById('transcriptsTab');
+        this.accountTabContent = document.getElementById('accountTabContent');
+        this.billingTabContent = document.getElementById('billingTabContent');
+        this.transcriptsTabContent = document.getElementById('transcriptsTabContent');
+        this.profileEmail = document.getElementById('profileEmail');
+        this.profileSubscription = document.getElementById('profileSubscription');
+        this.profileMinutes = document.getElementById('profileMinutes');
+        this.profileCreated = document.getElementById('profileCreated');
+        this.billingHistory = document.getElementById('billingHistory');
+        this.transcriptHistory = document.getElementById('transcriptHistory');
         
         // Waveform element
         this.waveform = document.getElementById('waveform');
@@ -269,25 +287,70 @@ class AudioNote {
         });
         
         // AI Enhancement events (removed - now automatic)
-        this.timeBtn.addEventListener('click', () => this.showTimePanel());
-        this.closeTimeBtn.addEventListener('click', () => this.hideTimePanel());
+        if (this.timeBtn) {
+            this.timeBtn.addEventListener('click', () => this.showTimePanel());
+        }
+        if (this.closeTimeBtn) {
+            this.closeTimeBtn.addEventListener('click', () => this.hideTimePanel());
+        }
 
         // Authentication events
-        this.authBtn.addEventListener('click', () => this.showAuth());
-        this.logoutBtn.addEventListener('click', () => this.logout());
-        this.closeAuthModal.addEventListener('click', () => this.hideAuthModal());
-        this.sendCodeBtn.addEventListener('click', () => this.sendVerificationCode());
-        this.verifyCodeBtn.addEventListener('click', () => this.verifyCode());
-        this.resendCodeBtn.addEventListener('click', () => this.resendCode());
-        this.backToEmailBtn.addEventListener('click', () => this.backToEmailStep());
-        this.authSwitchBtn.addEventListener('click', () => this.toggleAuthMode());
+        if (this.authBtn) {
+            this.authBtn.addEventListener('click', () => this.showAuth());
+        }
+        if (this.logoutBtn) {
+            this.logoutBtn.addEventListener('click', () => this.logout());
+        }
+        if (this.closeAuthModal) {
+            this.closeAuthModal.addEventListener('click', () => this.hideAuthModal());
+        }
+        if (this.sendCodeBtn) {
+            this.sendCodeBtn.addEventListener('click', () => this.sendVerificationCode());
+        }
+        if (this.verifyCodeBtn) {
+            this.verifyCodeBtn.addEventListener('click', () => this.verifyCode());
+        }
+        if (this.resendCodeBtn) {
+            this.resendCodeBtn.addEventListener('click', () => this.resendCode());
+        }
+        if (this.backToEmailBtn) {
+            this.backToEmailBtn.addEventListener('click', () => this.backToEmailStep());
+        }
+        if (this.authSwitchBtn) {
+            this.authSwitchBtn.addEventListener('click', () => this.toggleAuthMode());
+        }
         
         // User menu events
-        this.userIconBtn.addEventListener('click', () => this.toggleUserDropdown());
+        if (this.userIconBtn) {
+            this.userIconBtn.addEventListener('click', () => this.toggleUserDropdown());
+        }
         
-        this.clearBtn.addEventListener('click', () => this.clearTranscript());
-        this.copyBtn.addEventListener('click', () => this.copyTranscript());
-        this.shareBtn.addEventListener('click', () => this.shareTranscript());
+        // Profile modal events
+        if (this.profileBtn) {
+            this.profileBtn.addEventListener('click', () => this.showProfile());
+        }
+        if (this.closeProfileModal) {
+            this.closeProfileModal.addEventListener('click', () => this.hideProfileModal());
+        }
+        if (this.accountTab) {
+            this.accountTab.addEventListener('click', () => this.switchProfileTab('account'));
+        }
+        if (this.billingTab) {
+            this.billingTab.addEventListener('click', () => this.switchProfileTab('billing'));
+        }
+        if (this.transcriptsTab) {
+            this.transcriptsTab.addEventListener('click', () => this.switchProfileTab('transcripts'));
+        }
+        
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', () => this.clearTranscript());
+        }
+        if (this.copyBtn) {
+            this.copyBtn.addEventListener('click', () => this.copyTranscript());
+        }
+        if (this.shareBtn) {
+            this.shareBtn.addEventListener('click', () => this.shareTranscript());
+        }
         this.transcript.addEventListener('input', () => this.updateStats());
         
         // Handle paste events
@@ -299,31 +362,50 @@ class AudioNote {
         });
         
         // Close panels when clicking outside
-        this.timePanel.addEventListener('click', (e) => {
-            if (e.target === this.timePanel) {
-                this.hideTimePanel();
-            }
-        });
+        if (this.timePanel) {
+            this.timePanel.addEventListener('click', (e) => {
+                if (e.target === this.timePanel) {
+                    this.hideTimePanel();
+                }
+            });
+        }
         
         // Close user dropdown when clicking outside
         document.addEventListener('click', (e) => {
-            if (!this.userIconBtn.contains(e.target) && !this.userDropdown.contains(e.target)) {
+            if (this.userIconBtn && this.userDropdown && 
+                !this.userIconBtn.contains(e.target) && !this.userDropdown.contains(e.target)) {
                 this.hideUserDropdown();
             }
         });
 
-        this.authModal.addEventListener('click', (e) => {
-            if (e.target === this.authModal) {
-                this.hideAuthModal();
-            }
-        });
+        if (this.authModal) {
+            this.authModal.addEventListener('click', (e) => {
+                if (e.target === this.authModal) {
+                    this.hideAuthModal();
+                }
+            });
+        }
+        
+        if (this.profileModal) {
+            this.profileModal.addEventListener('click', (e) => {
+                if (e.target === this.profileModal) {
+                    this.hideProfileModal();
+                }
+            });
+        }
 
         // Add buy button event listeners
         document.addEventListener('click', (e) => {
             if (e.target.classList.contains('buy-btn')) {
-                const minutes = parseInt(e.target.dataset.minutes);
+                const plan = e.target.dataset.plan;
                 const price = parseFloat(e.target.dataset.price);
-                this.purchaseTime(minutes, price);
+                if (plan) {
+                    this.purchasePlan(plan, price);
+                } else {
+                    // Fallback for old minute-based buttons
+                    const minutes = parseInt(e.target.dataset.minutes);
+                    this.purchaseTime(minutes, price);
+                }
             }
         });
     }
@@ -698,7 +780,8 @@ class AudioNote {
                 body: JSON.stringify({
                     text: transcript,
                     mode: 'auto-format', // New mode for automatic formatting
-                    sessionToken: this.sessionToken
+                    sessionToken: this.sessionToken,
+                    email: this.user?.email
                 })
             });
 
@@ -951,7 +1034,10 @@ class AudioNote {
                 this.sessionToken = data.user.sessionToken;
                 this.userMinutes = data.user.remainingMinutes;
                 
+                // Store in localStorage for profile page access
                 localStorage.setItem('audioNote_sessionToken', this.sessionToken);
+                localStorage.setItem('userEmail', this.user.email);
+                localStorage.setItem('sessionToken', this.sessionToken);
                 
                 this.hideAuthModal();
                 this.updateUserDisplay();
@@ -973,14 +1059,57 @@ class AudioNote {
         }
     }
 
+    async restoreSession() {
+        const storedEmail = localStorage.getItem('userEmail');
+        const storedSessionToken = localStorage.getItem('sessionToken');
+        
+        if (storedEmail && storedSessionToken) {
+            console.log('Restoring session for:', storedEmail);
+            
+            try {
+                // Verify session with auth API
+                const response = await fetch('/api/auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check-session',
+                        email: storedEmail,
+                        sessionToken: storedSessionToken
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    this.user = data.user;
+                    this.sessionToken = storedSessionToken;
+                    this.userMinutes = data.user.remainingMinutes || 1;
+                    this.showLoggedInState();
+                    console.log('Session restored successfully');
+                } else {
+                    console.log('Session invalid, clearing storage');
+                    this.clearSession();
+                }
+            } catch (error) {
+                console.error('Session restoration failed:', error);
+                this.clearSession();
+            }
+        }
+    }
+
+    clearSession() {
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('sessionToken');
+        localStorage.removeItem('audioNote_sessionToken');
+        this.showAuthButtons();
+    }
+
     logout() {
         this.user = null;
         this.sessionToken = null;
-        this.userMinutes = 0;
+        this.userMinutes = 1;
         
-        localStorage.removeItem('audioNote_sessionToken');
-        
-        this.showAuthButtons();
+        this.clearSession();
         this.updateAIButtonState();
         this.showMessage('Logged out successfully');
     }
@@ -1030,6 +1159,7 @@ class AudioNote {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     sessionToken: this.sessionToken,
+                    email: this.user.email,
                     minutes: minutes,
                     amount: price
                 })
@@ -1041,11 +1171,9 @@ class AudioNote {
                 if (data.demo) {
                     // Demo mode - simulate successful payment
                     if (confirm(`Demo: Purchase ${minutes} minutes for $${price}?`)) {
-                        this.userMinutes += minutes;
-                        this.updateTimeDisplay();
-                        this.updateAIButtonState();
+                        // Call success handler to record billing
+                        await this.handlePurchaseSuccess(minutes, price);
                         this.hideTimePanel();
-                        this.showMessage(`Successfully added ${minutes} minutes!`);
                     }
                 } else {
                     // Real Stripe checkout
@@ -1069,6 +1197,257 @@ class AudioNote {
             this.aiStatus.classList.remove('hidden');
         } else {
             this.aiStatus.classList.add('hidden');
+        }
+    }
+
+    // Profile Methods
+    async showProfile() {
+        if (!this.user) {
+            this.showError('Please sign in first');
+            return;
+        }
+
+        this.hideUserDropdown();
+        
+        // Store user data in localStorage for profile page
+        localStorage.setItem('userEmail', this.user.email);
+        localStorage.setItem('sessionToken', this.sessionToken);
+        
+        // Navigate to profile page
+        window.location.href = '/profile.html';
+    }
+
+    hideProfileModal() {
+        this.profileModal.classList.add('hidden');
+    }
+
+    switchProfileTab(tab) {
+        // Update tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        // Show selected tab
+        if (tab === 'account') {
+            this.accountTab.classList.add('active');
+            this.accountTabContent.classList.add('active');
+        } else if (tab === 'billing') {
+            this.billingTab.classList.add('active');
+            this.billingTabContent.classList.add('active');
+            this.loadBillingHistory();
+        } else if (tab === 'transcripts') {
+            this.transcriptsTab.classList.add('active');
+            this.transcriptsTabContent.classList.add('active');
+            this.loadTranscriptHistory();
+        }
+    }
+
+    async loadProfileData() {
+        if (!this.user) return;
+
+        // Update account info
+        this.profileEmail.textContent = this.user.email;
+        
+        const subscriptionType = this.user.subscriptionType || 'free';
+        if (subscriptionType === 'yearly') {
+            this.profileSubscription.textContent = 'Yearly Pass';
+        } else if (subscriptionType === 'two_year') {
+            this.profileSubscription.textContent = '2 Year Pass';
+        } else {
+            this.profileSubscription.textContent = 'Free Trial';
+        }
+        
+        // Show unlimited for paid plans, actual time for free
+        if (subscriptionType === 'yearly' || subscriptionType === 'two_year') {
+            this.profileMinutes.textContent = 'Unlimited';
+        } else {
+            this.profileMinutes.textContent = this.formatTime(this.user.remainingMinutes || this.userMinutes);
+        }
+        
+        if (this.user.createdAt) {
+            const date = new Date(this.user.createdAt);
+            this.profileCreated.textContent = date.toLocaleDateString();
+        } else {
+            this.profileCreated.textContent = 'Today';
+        }
+    }
+
+    async loadBillingHistory() {
+        try {
+            const response = await fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get-usage',
+                    email: this.user.email,
+                    sessionToken: this.sessionToken
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success) {
+                this.displayBillingHistory(data.billingHistory || []);
+            } else {
+                this.billingHistory.innerHTML = '<div class="empty-state"><p>No billing history available</p></div>';
+            }
+        } catch (error) {
+            console.error('Failed to load billing history:', error);
+            this.billingHistory.innerHTML = '<div class="empty-state"><p>Failed to load billing history</p></div>';
+        }
+    }
+
+    async loadTranscriptHistory() {
+        try {
+            const response = await fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'get-usage',
+                    email: this.user.email,
+                    sessionToken: this.sessionToken
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok && data.success && data.recentTranscripts) {
+                this.displayTranscriptHistory(data.recentTranscripts);
+            } else {
+                this.transcriptHistory.innerHTML = '<div class="empty-state"><p>No transcripts yet</p></div>';
+            }
+        } catch (error) {
+            console.error('Failed to load transcript history:', error);
+            this.transcriptHistory.innerHTML = '<div class="empty-state"><p>Failed to load transcripts</p></div>';
+        }
+    }
+
+    displayBillingHistory(billingItems) {
+        if (!billingItems || billingItems.length === 0) {
+            this.billingHistory.innerHTML = '<div class="empty-state"><p>No billing history yet</p></div>';
+            return;
+        }
+
+        const itemsHTML = billingItems.map(item => `
+            <div class="billing-item">
+                <div class="billing-item-header">
+                    <span class="billing-date">${new Date(item.date).toLocaleDateString()}</span>
+                    <span class="billing-amount">$${item.amount}</span>
+                </div>
+                <div class="billing-description">${item.description}</div>
+            </div>
+        `).join('');
+
+        this.billingHistory.innerHTML = itemsHTML;
+    }
+
+    displayTranscriptHistory(transcripts) {
+        if (!transcripts || transcripts.length === 0) {
+            this.transcriptHistory.innerHTML = '<div class="empty-state"><p>No transcripts yet</p></div>';
+            return;
+        }
+
+        const itemsHTML = transcripts.map(transcript => `
+            <div class="transcript-item">
+                <div class="transcript-item-header">
+                    <span class="transcript-date">${new Date(transcript.created_at).toLocaleDateString()}</span>
+                    <span class="word-count">${transcript.word_count || 0} words</span>
+                </div>
+                <div class="transcript-preview">${transcript.original_text || transcript.enhanced_text || 'No preview available'}</div>
+            </div>
+        `).join('');
+
+        this.transcriptHistory.innerHTML = itemsHTML;
+    }
+
+    formatTime(minutes) {
+        const mins = Math.floor(minutes);
+        const secs = Math.floor((minutes - mins) * 60);
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    async purchasePlan(planId, price) {
+        if (!this.user) {
+            this.showError('Please sign in first');
+            return;
+        }
+
+        try {
+            this.showMessage('Opening checkout...');
+            
+            const response = await fetch('/api/subscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create-checkout',
+                    sessionToken: this.sessionToken,
+                    email: this.user.email,
+                    planId: planId
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                if (data.demo) {
+                    // Demo mode - simulate successful subscription
+                    if (confirm(`Demo: Subscribe to ${planId} plan for $${price}?`)) {
+                        await this.handleSubscriptionSuccess(planId, price);
+                        this.hideTimePanel();
+                    }
+                } else {
+                    // Real Stripe checkout
+                    window.location.href = data.url;
+                }
+            } else {
+                this.showError(data.error || 'Failed to create checkout session');
+            }
+        } catch (error) {
+            this.showError('Failed to process subscription: ' + error.message);
+        }
+    }
+
+    async handlePurchaseSuccess(minutes, amount) {
+        try {
+            // Call checkout success API to record billing and add minutes
+            const response = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'success',
+                    email: this.user.email,
+                    minutes: minutes,
+                    amount: amount,
+                    sessionId: 'demo_purchase'
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.userMinutes += minutes;
+                this.updateTimeDisplay();
+                this.updateAIButtonState();
+                this.showMessage(`Successfully added ${minutes} minutes!`);
+            } else {
+                this.showError('Failed to process purchase');
+            }
+        } catch (error) {
+            console.error('Purchase success error:', error);
+            this.showError('Failed to process purchase');
+        }
+    }
+
+    async handleSubscriptionSuccess(planId, amount) {
+        try {
+            // Update user to unlimited minutes
+            this.user.subscriptionType = planId;
+            this.userMinutes = 9999; // Unlimited
+            this.updateTimeDisplay();
+            this.updateAIButtonState();
+            this.showMessage(`Successfully subscribed to ${planId} plan!`);
+        } catch (error) {
+            console.error('Subscription success error:', error);
+            this.showError('Failed to process subscription');
         }
     }
 }

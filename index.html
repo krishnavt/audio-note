@@ -27,6 +27,7 @@
                             <div class="user-info hidden" id="userInfo">
                                 <span id="userEmail" class="user-email"></span>
                                 <span id="userTime" class="user-time">1:00 min</span>
+                                <button id="profileBtn" class="profile-btn">Profile</button>
                                 <button id="logoutBtn" class="logout-btn">Logout</button>
                             </div>
                             <div class="auth-buttons" id="authButtons">
@@ -130,6 +131,90 @@
                     </div>
                 </div>
 
+                <!-- Profile Modal -->
+                <div id="profileModal" class="auth-modal hidden">
+                    <div class="auth-modal-content profile-modal-content">
+                        <div class="auth-modal-header">
+                            <h3 id="profileModalTitle">Profile</h3>
+                            <button id="closeProfileModal" class="close-btn">×</button>
+                        </div>
+                        <div class="auth-modal-body">
+                            <!-- Profile Tabs -->
+                            <div class="profile-tabs">
+                                <button id="accountTab" class="tab-btn active">Account</button>
+                                <button id="billingTab" class="tab-btn">Billing</button>
+                                <button id="transcriptsTab" class="tab-btn">Transcripts</button>
+                            </div>
+
+                            <!-- Account Tab -->
+                            <div id="accountTabContent" class="tab-content active">
+                                <div class="profile-section">
+                                    <h4>Account Information</h4>
+                                    <div class="profile-item">
+                                        <label>Email</label>
+                                        <span id="profileEmail">user@example.com</span>
+                                    </div>
+                                    <div class="profile-item">
+                                        <label>Subscription</label>
+                                        <span id="profileSubscription">Free Plan</span>
+                                    </div>
+                                    <div class="profile-item">
+                                        <label>Remaining Minutes</label>
+                                        <span id="profileMinutes">1:00</span>
+                                    </div>
+                                    <div class="profile-item">
+                                        <label>Member Since</label>
+                                        <span id="profileCreated">Today</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Billing Tab -->
+                            <div id="billingTabContent" class="tab-content">
+                                <div class="profile-section">
+                                    <h4>Billing History</h4>
+                                    <div id="billingHistory" class="billing-list">
+                                        <div class="empty-state">
+                                            <p>No billing history yet</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="profile-section">
+                                    <h4>Upgrade Plan</h4>
+                                    <div class="purchase-options">
+                                        <div class="purchase-plan">
+                                            <div>
+                                                <strong>Yearly Pass</strong>
+                                                <small>Unlimited transcription</small>
+                                            </div>
+                                            <button class="buy-btn" data-plan="yearly" data-price="99">$99</button>
+                                        </div>
+                                        <div class="purchase-plan">
+                                            <div>
+                                                <strong>2 Year Pass</strong>
+                                                <small>Best value - Save $39</small>
+                                            </div>
+                                            <button class="buy-btn" data-plan="two_year" data-price="159">$159</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Transcripts Tab -->
+                            <div id="transcriptsTabContent" class="tab-content">
+                                <div class="profile-section">
+                                    <h4>Recent Transcripts</h4>
+                                    <div id="transcriptHistory" class="transcript-list">
+                                        <div class="empty-state">
+                                            <p>No transcripts yet</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Time Plans Panel -->
                 <div id="timePanel" class="time-panel hidden">
                     <div class="time-header">
@@ -148,24 +233,23 @@
                         <div class="pricing-plans">
                             <h5>Purchase More Time</h5>
                             <div class="plan-options">
-                                <div class="plan">
-                                    <div class="plan-credits">30 Minutes</div>
-                                    <div class="plan-price">$9.99</div>
-                                    <button class="buy-btn" data-minutes="30" data-price="9.99">Buy Now</button>
-                                </div>
                                 <div class="plan popular">
                                     <div class="plan-badge">Popular</div>
-                                    <div class="plan-credits">120 Minutes</div>
-                                    <div class="plan-price">$29.99</div>
-                                    <div class="plan-savings">Save 25%</div>
-                                    <button class="buy-btn" data-minutes="120" data-price="29.99">Buy Now</button>
+                                    <div class="plan-credits">Yearly Pass</div>
+                                    <div class="plan-price">$99</div>
+                                    <div class="plan-savings">Unlimited transcription</div>
+                                    <button class="buy-btn" data-plan="yearly" data-price="99">Get the Yearly Pass</button>
                                 </div>
                                 <div class="plan">
-                                    <div class="plan-credits">300 Minutes</div>
-                                    <div class="plan-price">$59.99</div>
-                                    <div class="plan-savings">Save 40%</div>
-                                    <button class="buy-btn" data-minutes="300" data-price="59.99">Buy Now</button>
+                                    <div class="plan-credits">2 Year Pass</div>
+                                    <div class="plan-price">$159</div>
+                                    <div class="plan-savings">Save $39</div>
+                                    <button class="buy-btn" data-plan="two_year" data-price="159">Get the 2 Year Pass</button>
                                 </div>
+                            </div>
+                            <div class="guarantee-text">
+                                <p>Both with a 30 day money back guarantee.</p>
+                                <p><small>You will only be charged once. At the end of the period, you can choose to manually renew, or not. All the notes you've saved during your membership will still be yours to keep.</small></p>
                             </div>
                         </div>
                     </div>

@@ -1,4 +1,6 @@
-// Vercel serverless function for AI text enhancement
+// Vercel serverless function for AI text enhancement with Supabase integration
+import { supabase, getUserProfile, updateUserMinutes, saveTranscript } from './supabase.js';
+
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,7 +17,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { text, mode, sessionToken } = req.body;
+        const { text, mode, sessionToken, email } = req.body;
 
         if (!text || !text.trim()) {
             return res.status(400).json({ error: 'Text is required' });
@@ -25,9 +27,11 @@ export default async function handler(req, res) {
         let user = null;
         let useOpenAI = false;
         
-        if (sessionToken) {
-            user = await getUserBySession(sessionToken);
-            if (user && user.remainingMinutes >= 1) {
+        if (email) {
+            console.log('Getting user profile for:', email);
+            user = await getUserProfile(email);
+            console.log('User found:', !!user, user ? `minutes: ${user.remaining_minutes}` : 'no user');
+            if (user && user.remaining_minutes >= 1) {
                 useOpenAI = true; // Use full AI enhancement for authenticated users
             }
         }
@@ -39,6 +43,11 @@ export default async function handler(req, res) {
             // Full AI enhancement for authenticated users
             enhancedText = await callOpenAI(text, mode);
             if (enhancedText) {
+                // Save transcript to database
+                console.log('Saving transcript for user:', user.email);
+                const saveResult = await saveTranscript(user.email, text, enhancedText);
+                console.log('Transcript save result:', saveResult);
+                
                 // Deduct 1 minute of conversion time
                 await deductTime(user.email, 1, mode);
                 const remainingMinutes = await getUserRemainingMinutes(user.email);
@@ -53,6 +62,13 @@ export default async function handler(req, res) {
         
         // Basic formatting for non-authenticated users or when AI fails
         enhancedText = await basicTextFormatting(text);
+        
+        // Save transcript even for basic formatting if user is known
+        if (user && user.email) {
+            console.log('Saving basic transcript for user:', user.email);
+            const saveResult = await saveTranscript(user.email, text, enhancedText);
+            console.log('Basic transcript save result:', saveResult);
+        }
         
         return res.status(200).json({
             enhancedText: enhancedText,
@@ -106,40 +122,19 @@ async function callOpenAI(text, mode) {
     return data.choices[0]?.message?.content?.trim();
 }
 
-// In-memory storage for demo - in production use a proper database
-const users = new Map();
-
-async function getUserBySession(sessionToken) {
-    // Find user by session token
-    for (const [email, user] of users.entries()) {
-        if (user.sessionToken === sessionToken && user.sessionExpiresAt > new Date()) {
-            return user;
-        }
-    }
-    return null;
-}
-
 async function getUserRemainingMinutes(email) {
-    const user = users.get(email);
-    return user?.remainingMinutes || 0;
+    const user = await getUserProfile(email);
+    return user?.remaining_minutes || 0;
 }
 
 async function deductTime(email, minutes, mode) {
-    const user = users.get(email);
+    // Update user minutes in Supabase
+    const user = await getUserProfile(email);
     if (!user) return;
     
-    user.remainingMinutes = Math.max(0, user.remainingMinutes - minutes);
-    user.totalMinutesUsed = (user.totalMinutesUsed || 0) + minutes;
+    const newMinutes = Math.max(0, user.remaining_minutes - minutes);
+    await updateUserMinutes(email, newMinutes);
     
-    if (!user.usage) user.usage = [];
-    user.usage.push({
-        timestamp: new Date().toISOString(),
-        mode,
-        timeUsed: minutes,
-        type: 'enhancement'
-    });
-
-    users.set(email, user);
     return minutes;
 }
 

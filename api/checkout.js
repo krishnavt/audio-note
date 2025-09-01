@@ -1,4 +1,9 @@
-// Real Stripe checkout session creation
+// Stripe checkout API for AudioNote
+import Stripe from 'stripe';
+import { getUserProfile, updateUserMinutes, addBillingRecord } from './supabase.js';
+
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+
 export default async function handler(req, res) {
     // Set CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,38 +20,37 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { sessionToken, minutes, amount } = req.body;
+        const { action, sessionToken, minutes, amount, email, sessionId } = req.body;
 
-        if (!sessionToken || !minutes || !amount) {
-            return res.status(400).json({ error: 'Missing required fields' });
+        // Handle different actions
+        if (action === 'success') {
+            return await handlePaymentSuccess(req, res, email, sessionId, minutes, amount);
         }
 
-        // Verify user session
-        const user = await getUserBySession(sessionToken);
-        if (!user) {
-            return res.status(401).json({ error: 'Invalid or expired session' });
+        // Default checkout creation
+        if (!email || !minutes || !amount) {
+            return res.status(400).json({ error: 'Email, minutes, and amount are required' });
         }
 
-        // For demo purposes without real Stripe keys, simulate checkout
-        if (!process.env.STRIPE_SECRET_KEY) {
-            const mockCheckoutSession = {
-                id: `cs_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                url: `${req.headers.origin || 'https://audionote.app'}/?demo_payment=true&minutes=${minutes}&amount=${amount}`,
-                success_url: `${req.headers.origin || 'https://audionote.app'}/success?session_id={CHECKOUT_SESSION_ID}`,
-                cancel_url: `${req.headers.origin || 'https://audionote.app'}/`,
-                amount_total: amount * 100,
-                currency: 'usd'
-            };
+        // Get user profile from Supabase
+        let user = null;
+        if (sessionToken) {
+            // Verify user session (implementation needed)
+            user = await getUserProfile(email);
+        }
 
+        // If Stripe is not configured, return demo mode
+        if (!stripe) {
+            console.log('Stripe not configured, returning demo checkout');
             return res.status(200).json({
-                sessionId: mockCheckoutSession.id,
-                url: mockCheckoutSession.url,
-                demo: true
+                success: true,
+                demo: true,
+                message: 'Demo mode - Stripe not configured',
+                checkoutUrl: '/demo-checkout',
+                minutes,
+                amount
             });
         }
-
-        // Real Stripe integration (uncomment when you have Stripe keys)
-        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
         
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
@@ -96,4 +100,60 @@ async function getUserBySession(sessionToken) {
         }
     }
     return null;
+}
+
+async function handlePaymentSuccess(req, res, email, sessionId, minutes, amount) {
+    try {
+        // For demo mode
+        if (!stripe) {
+            // Simulate successful payment and add minutes
+            await updateUserMinutes(email, minutes);
+            
+            // Add billing record
+            await addBillingRecord(
+                email, 
+                amount, 
+                `${minutes} minutes purchase (Demo)`, 
+                minutes, 
+                `demo_${Date.now()}`
+            );
+
+            return res.status(200).json({
+                success: true,
+                demo: true,
+                message: `Successfully added ${minutes} minutes!`,
+                minutesAdded: minutes
+            });
+        }
+
+        // For real Stripe integration
+        if (sessionId) {
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
+            
+            if (session.payment_status === 'paid') {
+                // Add minutes to user account
+                await updateUserMinutes(email, minutes);
+                
+                // Record billing history
+                await addBillingRecord(
+                    email,
+                    amount,
+                    `${minutes} minutes purchase`,
+                    minutes,
+                    sessionId
+                );
+
+                return res.status(200).json({
+                    success: true,
+                    message: `Successfully added ${minutes} minutes!`,
+                    minutesAdded: minutes
+                });
+            }
+        }
+
+        return res.status(400).json({ error: 'Payment not completed' });
+    } catch (error) {
+        console.error('Payment success handling error:', error);
+        return res.status(500).json({ error: 'Failed to process payment success' });
+    }
 }

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - AudioNote</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .profile-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem 0;
+        }
+        
+        .profile-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .profile-header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .profile-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+        
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            transition: background 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .profile-title {
+            color: white;
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .profile-subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            margin: 0.5rem 0 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-page">
+        <div class="profile-container">
+            <div class="profile-header">
+                <button class="back-btn" onclick="window.location.href='/'">← Back to AudioNote</button>
+                <h1 class="profile-title">Profile</h1>
+                <p class="profile-subtitle" id="profileSubtitle">Manage your account and view your transcripts</p>
+            </div>
+            
+            <div class="profile-content">
+                <!-- Profile Tabs -->
+                <div class="profile-tabs">
+                    <button id="accountTab" class="tab-btn active">Account</button>
+                    <button id="billingTab" class="tab-btn">Billing</button>
+                    <button id="transcriptsTab" class="tab-btn">Transcripts</button>
+                </div>
+
+                <!-- Account Tab -->
+                <div id="accountTabContent" class="tab-content active">
+                    <div class="profile-section">
+                        <h4>Account Information</h4>
+                        <div class="profile-item">
+                            <label>Email</label>
+                            <span id="profileEmail">Loading...</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Subscription</label>
+                            <span id="profileSubscription">Loading...</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Remaining Minutes</label>
+                            <span id="profileMinutes">Loading...</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Member Since</label>
+                            <span id="profileCreated">Loading...</span>
+                        </div>
+                        <div class="profile-item">
+                            <label>Total Transcripts</label>
+                            <span id="profileTotalTranscripts">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing Tab -->
+                <div id="billingTabContent" class="tab-content">
+                    <div class="profile-section">
+                        <h4>Billing History</h4>
+                        <div id="billingHistory" class="billing-list">
+                            <div class="loading-state">Loading billing history...</div>
+                        </div>
+                    </div>
+                    <div class="profile-section" id="upgradeSection">
+                        <h4>Upgrade Plan</h4>
+                        <div class="purchase-options">
+                            <div class="purchase-plan">
+                                <div>
+                                    <strong>Yearly Pass</strong>
+                                    <small>Unlimited transcription</small>
+                                </div>
+                                <button class="buy-btn" data-plan="yearly" data-price="99">$99</button>
+                            </div>
+                            <div class="purchase-plan">
+                                <div>
+                                    <strong>2 Year Pass</strong>
+                                    <small>Best value - Save $39</small>
+                                </div>
+                                <button class="buy-btn" data-plan="two_year" data-price="159">$159</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transcripts Tab -->
+                <div id="transcriptsTabContent" class="tab-content">
+                    <div class="profile-section">
+                        <h4>Recent Transcripts</h4>
+                        <div id="transcriptHistory" class="transcript-list">
+                            <div class="loading-state">Loading transcripts...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="profile.js"></script>
+</body>
+</html>

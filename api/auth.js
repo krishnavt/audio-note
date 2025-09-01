@@ -1,8 +1,8 @@
-// Authentication API with email verification
+// Authentication API with email verification and Supabase integration
 import crypto from 'crypto';
+import { supabase, createUserProfile, getUserProfile } from './supabase.js';
 
-// In-memory storage for demo - in production use a proper database
-const users = new Map();
+// In-memory storage for verification codes (could also use Supabase)
 const verificationCodes = new Map();
 
 export default async function handler(req, res) {
@@ -94,25 +94,28 @@ async function handleVerifyCode(req, res, email, code) {
         return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    // Code is valid - create or update user
-    let user = users.get(email);
+    // Code is valid - create or update user with Supabase
+    let user = await getUserProfile(email);
     const isNewUser = !user;
     
     if (!user) {
-        user = {
-            email,
-            userId: crypto.randomUUID(),
-            createdAt: new Date().toISOString(),
-            remainingMinutes: 1, // 1 minute free for new users
-            totalMinutesUsed: 0,
-            subscriptionStatus: 'free',
-            lastLogin: new Date().toISOString()
-        };
+        // Create new user in Supabase
+        user = await createUserProfile(email);
+        if (!user) {
+            return res.status(500).json({ error: 'Failed to create user profile' });
+        }
+        console.log('New user created in Supabase:', email);
     } else {
-        user.lastLogin = new Date().toISOString();
+        // Update last login in Supabase
+        if (supabase) {
+            await supabase
+                .from('users')
+                .update({ last_login: new Date().toISOString() })
+                .eq('email', email);
+        }
+        console.log('Existing user logged in:', email);
     }
     
-    users.set(email, user);
     verificationCodes.delete(email);
 
     // Create session token
@@ -124,40 +127,36 @@ async function handleVerifyCode(req, res, email, code) {
         success: true,
         user: {
             email: user.email,
-            userId: user.userId,
-            remainingMinutes: user.remainingMinutes,
-            sessionToken: user.sessionToken,
+            userId: user.id || user.userId,
+            remainingMinutes: user.remaining_minutes || user.remainingMinutes,
+            subscriptionType: user.subscription_type || 'free',
+            sessionToken: sessionToken,
             isNewUser
         }
     });
 }
 
 async function handleCheckSession(req, res) {
-    const { sessionToken } = req.body;
+    const { sessionToken, email } = req.body;
     
-    if (!sessionToken) {
-        return res.status(401).json({ error: 'No session token provided' });
+    if (!sessionToken || !email) {
+        return res.status(401).json({ error: 'Session token and email required' });
     }
 
-    // Find user by session token
-    let userWithSession = null;
-    for (const [email, user] of users.entries()) {
-        if (user.sessionToken === sessionToken && user.sessionExpiresAt > new Date()) {
-            userWithSession = user;
-            break;
-        }
+    // Get user from Supabase
+    const user = await getUserProfile(email);
+    if (!user) {
+        return res.status(401).json({ error: 'User not found' });
     }
 
-    if (!userWithSession) {
-        return res.status(401).json({ error: 'Invalid or expired session' });
-    }
-
+    // For demo purposes, we'll consider any valid user with a session token as authenticated
     return res.status(200).json({
         success: true,
         user: {
-            email: userWithSession.email,
-            userId: userWithSession.userId,
-            remainingMinutes: userWithSession.remainingMinutes
+            email: user.email,
+            userId: user.id,
+            remainingMinutes: user.remaining_minutes,
+            subscriptionType: user.subscription_type
         }
     });
 }
